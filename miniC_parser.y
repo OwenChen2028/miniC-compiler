@@ -17,46 +17,53 @@ extern FILE *yyin;
 %token INT VOID
 %token IF ELSE WHILE
 %token RETURN
-%token EQ GE LE
+%token EQ NE GE LE
 %token EXTERN
 %token READ PRINT
 %start start
+
+%nonassoc TAG
+%nonassoc ELSE
 
 %%
 start : printDec readDec funcDec
 
 printDec : EXTERN VOID PRINT '(' INT ')' ';'
 readDec : EXTERN INT READ '(' ')' ';'
-funcDec : INT ID '(' ')' '{' block '}'
-        | INT ID '(' INT ID ')' '{' block '}'
+funcDec : INT ID '(' ')' block
+        | INT ID '(' INT ID ')' block
 
-block : stmt | stmt block
-stmt : varDec | varAssign | printStmt | ifStmt | whileStmt | retStmt
+block : '{' decls stmts '}'
 
+decls : /* empty */ | decls varDec
 varDec : INT ID ';'
+
+stmts : /* empty */ | stmts stmt
+stmt : varAssign | printStmt | ifStmt | whileStmt | retStmt | block
+
 varAssign : ID '=' intExpr ';'
           | ID '=' readCall ';'
 
 readCall : READ '(' ')'
-printStmt : PRINT '(' term ')' ';'
+printStmt : PRINT '(' intExpr ')' ';'
 
-ifStmt : IF '(' boolExpr ')' ifBody
-       | IF '(' boolExpr ')' ifBody ELSE ifBody
-ifBody : stmt | '{' block '}'
+ifStmt : IF '(' boolExpr ')' stmt %prec TAG
+       | IF '(' boolExpr ')' stmt ELSE stmt
 
-whileStmt : WHILE '{' block '}'
+whileStmt : WHILE '(' boolExpr ')' stmt
 
 retStmt : RETURN intExpr ';'
         | RETURN '(' intExpr ')' ';'
+
+boolExpr : intExpr logicOp intExpr
+logicOp : '>' | '<' | EQ | NE | GE | LE
 
 intExpr : term
         | term arithOp term
 arithOp : '+' | '-' | '*' | '/'
 
-boolExpr : term logicOp term
-logicOp : '>' | '<' | EQ | GE | LE
-
-term : NUM | ID
+term : posTerm | '-' posTerm
+posTerm : NUM | ID
 %%
 
 int yyerror(char *s) {
