@@ -1,5 +1,6 @@
 %{
 #include "ast.h"
+#include "analysis.h"
 #include <stdio.h>
 #include <vector>
 
@@ -116,13 +117,27 @@ int main(int argc, char *argv[]) {
     yyin = fopen(argv[1], "r");
 
     if (yyin == NULL) {
-      fprintf(stderr, "File open error");
+      fprintf(stderr, "Error opening file.\n");
       return 1;
     }
   }
 
   if (yyparse() == 0) {
     printNode(root);
+
+    printf("\n");
+    switch (semantic_analysis(root)) {
+    case 0:
+      printf("No errors found.\n");
+      break;
+    case 1:
+      printf("Variable used before declaration.\n");
+      break;
+    case 2:
+      printf("Variable declared twice in one scope.\n");
+      break;
+    }
+
     freeNode(root);
   }
 
