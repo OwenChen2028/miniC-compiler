@@ -1,5 +1,7 @@
 %{
+#include "ast.h"
 #include "y.tab.h"
+#include <vector>
 extern int yyerror(char *);
 %}
 
@@ -17,8 +19,8 @@ print { return PRINT; }
 "!=" { return NE; }
 ">=" { return GE; }
 "<=" { return LE; }
-[0-9]+ { return NUM; }
-[a-zA-Z_][a-zA-Z0-9_]* { return ID; }
+[0-9]+ { yylval.ival = atoi(yytext); return NUM; }
+[a-zA-Z_][a-zA-Z0-9_]* { yylval.sval = strdup(yytext); return ID; }
 [ \t\r\n]+ { /* skip */ }
 . { return yytext[0]; }
 %%

@@ -1,5 +1,9 @@
 %{
+#include "ast.h"
 #include <stdio.h>
+#include <vector>
+
+astNode *root;
 
 extern int yylex();
 extern int yylex_destroy();
@@ -9,61 +13,97 @@ int yyerror(char *);
 
 extern FILE *yyin;
 %}
+
 %union {
-  
+  int ival;
+  char *sval;
+  astNode *node;
+  std::vector<astNode *> *nvec; 
 }
 
-%token ID NUM
+%token <ival> NUM
+%token <sval> ID
 %token INT VOID
 %token IF ELSE WHILE
 %token RETURN
 %token EQ NE GE LE
 %token EXTERN
 %token READ PRINT
-%start start
+
+%start program
 
 %nonassoc TAG
 %nonassoc ELSE
 
+%type <node> printDec readDec funcDec
+%type <node> block varDec stmt varAssign
+%type <node> readCall printStmt
+%type <node> ifStmt whileStmt retStmt
+%type <node> relExpr intExpr term posTerm
+%type <nvec> blockBody decls stmts
+
 %%
-start : printDec readDec funcDec
+program : printDec readDec funcDec { root = createProg($1, $2, $3); }
 
-printDec : EXTERN VOID PRINT '(' INT ')' ';'
-readDec : EXTERN INT READ '(' ')' ';'
-funcDec : INT ID '(' ')' block
-        | INT ID '(' INT ID ')' block
+printDec : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
 
-block : '{' decls stmts '}'
+readDec : EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
 
-decls : /* empty */ | decls varDec
-varDec : INT ID ';'
+funcDec : INT ID '(' ')' block { $$ = createFunc($2, NULL, $5); }
+        | INT ID '(' INT ID ')' block { $$ = createFunc($2, createVar($5), $7); }
 
-stmts : /* empty */ | stmts stmt
-stmt : varAssign | printStmt | ifStmt | whileStmt | retStmt | block
+block : '{' blockBody '}' { $$ = createBlock($2); }
 
-varAssign : ID '=' intExpr ';'
-          | ID '=' readCall ';'
+blockBody : decls stmts { $$ = $1; $$->insert($$->end(), $2->begin(), $2->end()); }
 
-readCall : READ '(' ')'
-printStmt : PRINT '(' intExpr ')' ';'
+decls : /* empty */ { $$ = new std::vector<astNode *>(); }
+      | decls varDec { $$ = $1; $$->push_back($2); }
 
-ifStmt : IF '(' boolExpr ')' stmt %prec TAG
-       | IF '(' boolExpr ')' stmt ELSE stmt
+varDec : INT ID ';' { $$ = createDecl($2); }
 
-whileStmt : WHILE '(' boolExpr ')' stmt
+stmts : /* empty */ { $$ = new std::vector<astNode *>(); }
+      | stmts stmt { $$ = $1; $$->push_back($2); }
 
-retStmt : RETURN intExpr ';'
-        | RETURN '(' intExpr ')' ';'
+stmt : varAssign { $$ = $1; }
+     | printStmt { $$ = $1; }
+     | ifStmt { $$ = $1; }
+     | whileStmt { $$ = $1; }
+     | retStmt { $$ = $1; }
+     | block { $$ = $1; }
 
-boolExpr : intExpr logicOp intExpr
-logicOp : '>' | '<' | EQ | NE | GE | LE
+varAssign : ID '=' intExpr ';' { $$ = createAsgn(createVar($1), $3); }
+          | ID '=' readCall ';' { $$ = createAsgn(createVar($1), $3); }
 
-intExpr : term
-        | term arithOp term
-arithOp : '+' | '-' | '*' | '/'
+readCall : READ '(' ')' { $$ = createCall("read"); }
 
-term : posTerm | '-' posTerm
-posTerm : NUM | ID
+printStmt : PRINT '(' intExpr ')' ';' { $$ = createCall("print", $3); }
+
+ifStmt : IF '(' relExpr ')' stmt %prec TAG { $$ = createIf($3, $5); }
+       | IF '(' relExpr ')' stmt ELSE stmt { $$ = createIf($3, $5, $7); }
+
+whileStmt : WHILE '(' relExpr ')' stmt { $$ = createWhile($3, $5); }
+
+retStmt : RETURN intExpr ';' { $$ = createRet($2); }
+        | RETURN '(' intExpr ')' ';' { $$ = createRet($3); }
+
+relExpr : intExpr '>' intExpr { $$ = createRExpr($1, $3, lt); }
+        | intExpr '<' intExpr { $$ = createRExpr($1, $3, gt); }
+        | intExpr EQ intExpr { $$ = createRExpr($1, $3, eq); }
+        | intExpr NE intExpr { $$ = createRExpr($1, $3, neq); }
+        | intExpr GE intExpr { $$ = createRExpr($1, $3, ge); }
+        | intExpr LE intExpr { $$ = createRExpr($1, $3, le); }
+
+intExpr : term { $$ = $1; }
+        | term '+' term { $$ = createBExpr($1, $3, add); }
+        | term '-' term { $$ = createBExpr($1, $3, sub); }
+        | term '*' term { $$ = createBExpr($1, $3, mul); }
+        | term '/' term { $$ = createBExpr($1, $3, divide); }
+
+term : posTerm { $$ = $1; }
+     | '-' posTerm { $$ = createUExpr((astNode *)$2, uminus); }
+
+posTerm : NUM { $$ = createCnst($1); }
+        | ID { $$ = createVar($1); }
 %%
 
 int yyerror(char *s) {
@@ -81,6 +121,10 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  yyparse();
+  if (yyparse() == 0) {
+    printNode(root);
+    freeNode(root);
+  }
+
   return 0;
 }
