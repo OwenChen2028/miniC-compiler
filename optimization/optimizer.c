@@ -49,7 +49,8 @@ struct subexprHash {
   }
 };
 
-void doCommonSubexprElim(LLVMBasicBlockRef bb) {
+int doCommonSubexprElim(LLVMBasicBlockRef bb) {
+  int changed = 0;
   std::unordered_map<subexpr, LLVMValueRef, subexprHash> visited;
 
   for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
@@ -71,6 +72,7 @@ void doCommonSubexprElim(LLVMBasicBlockRef bb) {
 
     if (prev != visited.end()) { // found curr in visited
       if (!LLVMIsALoadInst(instruction)) {
+        changed = 1;
         LLVMReplaceAllUsesWith(instruction, prev->second);
       } else {
         int safe = 1;
@@ -85,26 +87,27 @@ void doCommonSubexprElim(LLVMBasicBlockRef bb) {
             }
           }
         }
-        if (safe)
+        if (safe) {
+          changed = 1;
           LLVMReplaceAllUsesWith(instruction, prev->second);
+        }
         else
           prev->second = instruction; // replace old inst, it has a store after
       }
     } else
       visited.emplace(std::move(curr), instruction);
   }
+
+  return 1;
 }
 
-void doDeadCodeElim(LLVMBasicBlockRef bb) {
-  int changed;
+int doDeadCodeElim(LLVMBasicBlockRef bb) {
+  int changed = 0;
 
-  do {
-    changed = 0;
+  for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;) {
+    LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
 
-    for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;) {
-      LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
-
-      if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
+    if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
           LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
         instruction = nextInstr;
         continue; // inst has side effects, do not elim
@@ -118,10 +121,13 @@ void doDeadCodeElim(LLVMBasicBlockRef bb) {
 
       instruction = nextInstr;
     }
-  } while (changed); // repeat until no changes
+
+  return changed;
 }
 
-void doConstantFolding(LLVMBasicBlockRef bb) {
+int doConstantFolding(LLVMBasicBlockRef bb) {
+  int changed = 0;
+
   for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
        instruction = LLVMGetNextInstruction(instruction)) {
 
@@ -146,18 +152,24 @@ void doConstantFolding(LLVMBasicBlockRef bb) {
           break;
         }
 
+        changed = 1;
         LLVMReplaceAllUsesWith(instruction, constInstr);
       }
     }
+
   }
+
+  return changed;
 }
 
 void doLocalOptimizations(LLVMValueRef function) {
   for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
        basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
     doConstantFolding(basicBlock);
     doCommonSubexprElim(basicBlock);
-    doDeadCodeElim(basicBlock); // do this last
+    while (doDeadCodeElim(basicBlock)); // repeat until stable
+
   }
 }
 
