@@ -49,7 +49,7 @@ struct subexprHash {
   }
 };
 
-void eliminateCommonSubexpr(LLVMBasicBlockRef bb) {
+void doCommonSubexprElim(LLVMBasicBlockRef bb) {
   std::unordered_map<subexpr, LLVMValueRef, subexprHash> visited;
 
   for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
@@ -92,21 +92,50 @@ void eliminateCommonSubexpr(LLVMBasicBlockRef bb) {
       }
     } else
       visited.emplace(std::move(curr), instruction);
-
   }
 }
 
-void performLocalOptimizations(LLVMValueRef function) {
+void doDeadCodeElim(LLVMBasicBlockRef bb) {
+  int changed;
+
+  do {
+    changed = 0;
+
+    for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;) {
+
+      LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
+
+      if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
+          LLVMIsATerminatorInst(instruction) ||
+          LLVMIsAAllocaInst(instruction)) {
+        instruction = nextInstr;
+        continue; // do not elim inst with side effects
+      }
+
+      LLVMUseRef firstUse = LLVMGetFirstUse(instruction);
+      if (firstUse == NULL) {
+        LLVMInstructionEraseFromParent(instruction);
+        changed = 1;
+      }
+
+      instruction = nextInstr;
+    }
+  } while (changed); // repeat until no changes
+}
+
+void doLocalOptimizations(LLVMValueRef function) {
   for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
        basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
-    eliminateCommonSubexpr(basicBlock);
+    doCommonSubexprElim(basicBlock);
+    doDeadCodeElim(basicBlock);
+    // doConstantFolding(basicBlock);
   }
 }
 
 void walkFunctions(LLVMModuleRef module) {
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
        function = LLVMGetNextFunction(function)) {
-    performLocalOptimizations(function);
+    doLocalOptimizations(function);
   }
 }
 
