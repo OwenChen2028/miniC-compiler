@@ -90,8 +90,7 @@ int doCommonSubexprElim(LLVMBasicBlockRef bb) {
         if (safe) {
           changed = 1;
           LLVMReplaceAllUsesWith(instruction, prev->second);
-        }
-        else
+        } else
           prev->second = instruction; // replace old inst, it has a store after
       }
     } else
@@ -108,19 +107,19 @@ int doDeadCodeElim(LLVMBasicBlockRef bb) {
     LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
 
     if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
-          LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
-        instruction = nextInstr;
-        continue; // inst has side effects, do not elim
-      }
-
-      LLVMUseRef firstUse = LLVMGetFirstUse(instruction);
-      if (firstUse == NULL) {
-        LLVMInstructionEraseFromParent(instruction);
-        changed = 1;
-      }
-
+        LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
       instruction = nextInstr;
+      continue; // inst has side effects, do not elim
     }
+
+    LLVMUseRef firstUse = LLVMGetFirstUse(instruction);
+    if (firstUse == NULL) {
+      LLVMInstructionEraseFromParent(instruction);
+      changed = 1;
+    }
+
+    instruction = nextInstr;
+  }
 
   return changed;
 }
@@ -156,7 +155,6 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
         LLVMReplaceAllUsesWith(instruction, constInstr);
       }
     }
-
   }
 
   return changed;
@@ -168,8 +166,8 @@ void doLocalOptimizations(LLVMValueRef function) {
 
     doConstantFolding(basicBlock);
     doCommonSubexprElim(basicBlock);
-    while (doDeadCodeElim(basicBlock)); // repeat until stable
-
+    while (doDeadCodeElim(basicBlock))
+      ; // repeat until stable
   }
 }
 
