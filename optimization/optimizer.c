@@ -102,14 +102,12 @@ void doDeadCodeElim(LLVMBasicBlockRef bb) {
     changed = 0;
 
     for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;) {
-
       LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
 
       if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
-          LLVMIsATerminatorInst(instruction) ||
-          LLVMIsAAllocaInst(instruction)) {
+          LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
         instruction = nextInstr;
-        continue; // do not elim inst with side effects
+        continue; // inst has side effects, do not elim
       }
 
       LLVMUseRef firstUse = LLVMGetFirstUse(instruction);
@@ -123,20 +121,50 @@ void doDeadCodeElim(LLVMBasicBlockRef bb) {
   } while (changed); // repeat until no changes
 }
 
+void doConstantFolding(LLVMBasicBlockRef bb) {
+  for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
+       instruction = LLVMGetNextInstruction(instruction)) {
+
+    LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
+
+    if (op == LLVMAdd || op == LLVMSub || op == LLVMMul) {
+      LLVMValueRef operA = LLVMGetOperand(instruction, 0);
+      LLVMValueRef operB = LLVMGetOperand(instruction, 1);
+
+      if (LLVMIsConstant(operA) && LLVMIsConstant(operB)) {
+        LLVMValueRef constInstr;
+
+        switch (op) {
+        case LLVMAdd:
+          constInstr = LLVMConstAdd(operA, operB);
+          break;
+        case LLVMSub:
+          constInstr = LLVMConstSub(operA, operB);
+          break;
+        case LLVMMul:
+          constInstr = LLVMConstMul(operA, operB);
+          break;
+        }
+
+        LLVMReplaceAllUsesWith(instruction, constInstr);
+      }
+    }
+  }
+}
+
 void doLocalOptimizations(LLVMValueRef function) {
   for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
        basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+    doConstantFolding(basicBlock);
     doCommonSubexprElim(basicBlock);
-    doDeadCodeElim(basicBlock);
-    // doConstantFolding(basicBlock);
+    doDeadCodeElim(basicBlock); // do this last
   }
 }
 
 void walkFunctions(LLVMModuleRef module) {
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
-       function = LLVMGetNextFunction(function)) {
+       function = LLVMGetNextFunction(function))
     doLocalOptimizations(function);
-  }
 }
 
 int main(int argc, char **argv) {
