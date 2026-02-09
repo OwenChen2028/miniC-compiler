@@ -1,5 +1,5 @@
-; ModuleID = 'p4_const_prop.c'
-source_filename = "p4_const_prop.c"
+; ModuleID = 'p5_const_prop.c'
+source_filename = "p5_const_prop.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
@@ -9,12 +9,12 @@ define dso_local i32 @func(i32 noundef %0) #0 {
   %3 = alloca i32, align 4
   %4 = alloca i32, align 4
   %5 = alloca i32, align 4
-  %6 = alloca i32, align 4
   store i32 %0, ptr %2, align 4
   store i32 10, ptr %3, align 4
-  store i32 20, ptr %4, align 4
-  %7 = load i32, ptr %3, align 4
-  %8 = add nsw i32 %7, 10
+  store i32 15, ptr %4, align 4
+  %6 = load i32, ptr %3, align 4
+  %7 = load i32, ptr %4, align 4
+  %8 = add nsw i32 %6, %7
   store i32 %8, ptr %5, align 4
   store i32 5, ptr %3, align 4
   br label %9

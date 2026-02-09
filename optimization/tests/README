@@ -1,10 +1,8 @@
-1. To generate an llvm file from a give c file use the following command:
-clang -S -emit-llvm (filename).c -o (filename).ll
+1. This directory has an optimized (suffix _opt) and unoptimized 
+LLVM file for each program.
 
-2. To complile and generate a.out for your optimized llvm file use the 
-following command:
-clang (filename).ll main.c
+2. For files cfold* and p2_common_subexpr files only local optimizations were turned on
+so no constants are propagated.
 
-3. Run the executable generated from both the optimized and the unoptimized 
-llvm to compare the outputs.
- 
+3. For files p4*, p5* and p6* both local and global optimizations were turned on.
+4. Files p4, p5, and p6 test different scenarios to be handled in constant propagation. 

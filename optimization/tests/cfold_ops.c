@@ -8,7 +8,7 @@ int func(int p){
 	int c2;
 	a = 10;
 	b = 20;
-  c2 = a + b;
+  c2 = a < b;
 	
 	return c2;
 }

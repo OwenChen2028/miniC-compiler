@@ -5,11 +5,10 @@ int func(int i){
 	int a;
 	int b;
 	int c;
-	int d;
 	
 	a = 10;
-	b = 20;
-	c = a + 10;
+	b = 15;
+	c = a + b;
 	a = 5;
 
 	while (a < i){
