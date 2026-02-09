@@ -123,7 +123,7 @@ void doDeadCodeElim(LLVMBasicBlockRef bb) {
 }
 
 int doConstantFolding(LLVMBasicBlockRef bb) {
-  int changed = 0;
+  int changes = 0;
 
   for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
        instruction = LLVMGetNextInstruction(instruction)) {
@@ -149,16 +149,16 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
           break;
         }
 
-        changed = 1;
+        ++changes;
         LLVMReplaceAllUsesWith(instruction, constInstr);
       }
     }
   }
 
-  return changed;
+  return changes;
 }
 
-void doConstantPropagation(LLVMModuleRef module) {
+int doConstantPropagation(LLVMModuleRef module) {
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> gen;
 
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
@@ -269,6 +269,8 @@ void doConstantPropagation(LLVMModuleRef module) {
     }
   } while (changed);
 
+  int replaces = 0;
+
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
        function = LLVMGetNextFunction(function)) {
     for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
@@ -314,6 +316,7 @@ void doConstantPropagation(LLVMModuleRef module) {
 
               //LLVMValueRef cons = LLVMConstInt(LLVMTypeOf(oper), val, 1);
               //LLVMReplaceAllUsesWith(instruction, cons);
+              ++replaces;
               LLVMReplaceAllUsesWith(instruction, oper);
 
               marked.insert(instruction);
@@ -326,6 +329,8 @@ void doConstantPropagation(LLVMModuleRef module) {
         LLVMInstructionEraseFromParent(instruction);
     }
   }
+
+  return replaces;
 }
 
 void doOptimizations(LLVMModuleRef module) {
@@ -342,8 +347,7 @@ void doOptimizations(LLVMModuleRef module) {
 
   int changes;
   do {
-    changes = 0;
-    doConstantPropagation(module);
+    changes = doConstantPropagation(module);
 
     for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
          function = LLVMGetNextFunction(function)) {
