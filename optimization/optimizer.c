@@ -50,8 +50,7 @@ struct subexprHash {
   }
 };
 
-int doCommonSubexprElim(LLVMBasicBlockRef bb) {
-  int changed = 0;
+void doCommonSubexprElim(LLVMBasicBlockRef bb) {
   std::unordered_map<subexpr, LLVMValueRef, subexprHash> visited;
 
   for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
@@ -73,7 +72,6 @@ int doCommonSubexprElim(LLVMBasicBlockRef bb) {
 
     if (prev != visited.end()) { // found curr in visited
       if (!LLVMIsALoadInst(instruction)) {
-        changed = 1;
         LLVMReplaceAllUsesWith(instruction, prev->second);
       } else {
         int safe = 1;
@@ -89,7 +87,6 @@ int doCommonSubexprElim(LLVMBasicBlockRef bb) {
           }
         }
         if (safe) {
-          changed = 1;
           LLVMReplaceAllUsesWith(instruction, prev->second);
         } else
           prev->second = instruction; // replace old inst, it has a store after
@@ -97,32 +94,33 @@ int doCommonSubexprElim(LLVMBasicBlockRef bb) {
     } else
       visited.emplace(std::move(curr), instruction);
   }
-
-  return 1;
 }
 
-int doDeadCodeElim(LLVMBasicBlockRef bb) {
-  int changed = 0;
+void doDeadCodeElim(LLVMBasicBlockRef bb) {
+  int changed;
 
-  for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;) {
-    LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
+  do {
+    changed = 0;
 
-    if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
-        LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
+    for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;) {
+      LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
+
+      if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
+          LLVMIsATerminatorInst(instruction) ||
+          LLVMIsAAllocaInst(instruction)) {
+        instruction = nextInstr;
+        continue;
+      }
+
+      LLVMUseRef firstUse = LLVMGetFirstUse(instruction);
+      if (firstUse == NULL) {
+        LLVMInstructionEraseFromParent(instruction);
+        changed = 1;
+      }
+
       instruction = nextInstr;
-      continue; // inst has side effects, do not elim
     }
-
-    LLVMUseRef firstUse = LLVMGetFirstUse(instruction);
-    if (firstUse == NULL) {
-      LLVMInstructionEraseFromParent(instruction);
-      changed = 1;
-    }
-
-    instruction = nextInstr;
-  }
-
-  return changed;
+  } while (changed);
 }
 
 int doConstantFolding(LLVMBasicBlockRef bb) {
@@ -161,7 +159,7 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
   return changed;
 }
 
-int doConstantPropogation(LLVMModuleRef module) {
+void doConstantPropogation(LLVMModuleRef module) {
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> gen;
 
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
@@ -213,20 +211,62 @@ int doConstantPropogation(LLVMModuleRef module) {
         if (!LLVMIsAStoreInst(instruction))
           continue;
 
-        for (LLVMValueRef s : stores) {
-          if (s == instruction)
+        for (LLVMValueRef store : stores) {
+          if (store == instruction)
             continue;
-          if (LLVMGetOperand(s, 1) == LLVMGetOperand(instruction, 1))
-            kill[basicBlock].insert(s);
+          if (LLVMGetOperand(store, 1) == LLVMGetOperand(instruction, 1))
+            kill[basicBlock].insert(store);
         }
       }
     }
-
-    std::unordered_set<LLVMValueRef> in;
-    std::unordered_set<LLVMValueRef> out;
-
-    
   }
+
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> in;
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> out;
+
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMBasicBlockRef>>
+      preds;
+
+  for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
+       function = LLVMGetNextFunction(function)) {
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
+      out[basicBlock] = gen[basicBlock];
+
+      LLVMValueRef terminator = LLVMGetBasicBlockTerminator(basicBlock);
+      for (int i = 0; i < LLVMGetNumSuccessors(terminator); ++i) {
+        preds[LLVMGetSuccessor(terminator, i)].insert(basicBlock);
+      }
+    }
+  }
+
+  int changed;
+  do {
+    changed = 0;
+
+    for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
+         function = LLVMGetNextFunction(function)) {
+      for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+           basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
+        in[basicBlock].clear();
+        for (LLVMBasicBlockRef pred : preds[basicBlock]) {
+          in[basicBlock].insert(out[pred].begin(), out[pred].end());
+        }
+
+        auto oldOut = out[basicBlock];
+
+        out[basicBlock] = gen[basicBlock];
+        for (LLVMValueRef instr : kill[basicBlock])
+          in[basicBlock].erase(instr); // in reassigned every loop, safe to modify
+        out[basicBlock].insert(in[basicBlock].begin(), in[basicBlock].end());
+
+        if (out[basicBlock] != oldOut)
+          changed = 1;
+      }
+    }
+  } while (changed);
 }
 
 void doOptimizations(LLVMModuleRef module) {
@@ -237,8 +277,7 @@ void doOptimizations(LLVMModuleRef module) {
 
       doConstantFolding(basicBlock);
       doCommonSubexprElim(basicBlock);
-      while (doDeadCodeElim(basicBlock))
-        ; // repeat until stable
+      doDeadCodeElim(basicBlock);
     }
   }
 }
