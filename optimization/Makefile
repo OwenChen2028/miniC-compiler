@@ -3,5 +3,5 @@ optimizer:
 	g++ optimizer.o `llvm-config-17 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-17/ -o optimizer.out
 
 clean:
-	rm -f optimizer.out
+	rm -f *.out
 	rm -f *.o
