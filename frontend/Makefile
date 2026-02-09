@@ -1,4 +1,4 @@
-compiler:
+parser:
 	lex lexer.l
 	yacc -d parser.y
 	g++ -g -Wno-write-strings lex.yy.c y.tab.c ast.c analysis.c -o parser.out

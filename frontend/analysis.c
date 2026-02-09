@@ -34,7 +34,7 @@ void walk_nodes(astNode *node) {
 
   case ast_func:
     symbol_tables.push_back(std::vector<std::string>());
-    if (node->func.param && node->func.param->type == ast_var)
+    if (node->func.param)
       symbol_tables.back().push_back(node->func.param->var.name);
     if (node->func.body->stmt.block.stmt_list) {
       for (astNode *n : *node->func.body->stmt.block.stmt_list) {
