@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 LLVMModuleRef createLLVMModule(char *filename) {
@@ -160,21 +161,86 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
   return changed;
 }
 
-void doLocalOptimizations(LLVMValueRef function) {
-  for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
-       basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+int doConstantPropogation(LLVMModuleRef module) {
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> gen;
 
-    doConstantFolding(basicBlock);
-    doCommonSubexprElim(basicBlock);
-    while (doDeadCodeElim(basicBlock))
-      ; // repeat until stable
+  for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
+       function = LLVMGetNextFunction(function)) {
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+      for (LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
+           instruction; instruction = LLVMGetNextInstruction(instruction)) {
+
+        if (!LLVMIsAStoreInst(instruction))
+          continue;
+
+        for (auto iter = gen[basicBlock].begin();
+             iter != gen[basicBlock].end();) {
+          if (LLVMGetOperand(*iter, 1) ==
+              LLVMGetOperand(instruction, 1)) // another store at same location
+            iter = gen[basicBlock].erase(iter); // remove it and get next
+          else
+            ++iter;
+        }
+
+        gen[basicBlock].insert(instruction);
+      }
+    }
+  }
+
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> kill;
+
+  for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
+       function = LLVMGetNextFunction(function)) {
+
+    std::unordered_set<LLVMValueRef> stores;
+
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+      for (LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
+           instruction; instruction = LLVMGetNextInstruction(instruction)) {
+
+        if (LLVMIsAStoreInst(instruction))
+          stores.insert(instruction);
+      }
+    }
+
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+      for (LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
+           instruction; instruction = LLVMGetNextInstruction(instruction)) {
+
+        if (!LLVMIsAStoreInst(instruction))
+          continue;
+
+        for (LLVMValueRef s : stores) {
+          if (s == instruction)
+            continue;
+          if (LLVMGetOperand(s, 1) == LLVMGetOperand(instruction, 1))
+            kill[basicBlock].insert(s);
+        }
+      }
+    }
+
+    std::unordered_set<LLVMValueRef> in;
+    std::unordered_set<LLVMValueRef> out;
+
+    
   }
 }
 
-void walkFunctions(LLVMModuleRef module) {
+void doOptimizations(LLVMModuleRef module) {
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
-       function = LLVMGetNextFunction(function))
-    doLocalOptimizations(function);
+       function = LLVMGetNextFunction(function)) {
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
+      doConstantFolding(basicBlock);
+      doCommonSubexprElim(basicBlock);
+      while (doDeadCodeElim(basicBlock))
+        ; // repeat until stable
+    }
+  }
 }
 
 int main(int argc, char **argv) {
@@ -188,8 +254,7 @@ int main(int argc, char **argv) {
   }
 
   if (m != NULL) {
-    walkFunctions(m);
-    // TODO
+    doOptimizations(m);
     LLVMDumpModule(m);
   } else {
     fprintf(stderr, "Module reference is null.\n");
