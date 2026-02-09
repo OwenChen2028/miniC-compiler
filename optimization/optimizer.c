@@ -312,10 +312,7 @@ int doConstantPropagation(LLVMModuleRef module) {
 
             if (flag) {
               LLVMValueRef oper = LLVMGetOperand(*(writes.begin()), 0);
-              //long long val = LLVMConstIntGetSExtValue(oper);
 
-              //LLVMValueRef cons = LLVMConstInt(LLVMTypeOf(oper), val, 1);
-              //LLVMReplaceAllUsesWith(instruction, cons);
               ++replaces;
               LLVMReplaceAllUsesWith(instruction, oper);
 

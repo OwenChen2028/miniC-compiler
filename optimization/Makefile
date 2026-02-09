@@ -3,7 +3,7 @@ optimizer:
 	g++ optimizer.o `llvm-config-17 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-17/ -o optimizer.out
 
 llvm:
-	clang test.ll tests/main.c -o test.out
+	clang -Woverride-module test.ll tests/main.c -o test.out
 	./test.out
 
 clean:
