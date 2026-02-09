@@ -8,22 +8,27 @@ define dso_local i32 @func() #0 {
   %1 = alloca i32, align 4
   %2 = alloca i32, align 4
   %3 = alloca i32, align 4
-  store i32 1, ptr %3, align 4
-  %4 = load i32, ptr %3, align 4
-  %5 = add nsw i32 %4, 1
-  store i32 %5, ptr %2, align 4
-  %6 = load i32, ptr %2, align 4
-  %7 = add nsw i32 %6, 3
-  store i32 %7, ptr %1, align 4
-  store i32 4, ptr %2, align 4
-  %8 = load i32, ptr %2, align 4
-  %9 = add nsw i32 %8, 3
-  store i32 %9, ptr %1, align 4
-  %10 = load i32, ptr %1, align 4
-  ret i32 %10
+  %4 = call i32 (...) @read()
+  store i32 %4, ptr %3, align 4
+  %5 = load i32, ptr %3, align 4
+  %6 = add nsw i32 %5, 1
+  store i32 %6, ptr %2, align 4
+  %7 = load i32, ptr %2, align 4
+  %8 = add nsw i32 %7, 3
+  store i32 %8, ptr %1, align 4
+  %9 = call i32 (...) @read()
+  store i32 %9, ptr %2, align 4
+  %10 = load i32, ptr %2, align 4
+  %11 = add nsw i32 %10, 3
+  store i32 %11, ptr %1, align 4
+  %12 = load i32, ptr %1, align 4
+  ret i32 %12
 }
 
+declare i32 @read(...) #1
+
 attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}
 !llvm.ident = !{!5}

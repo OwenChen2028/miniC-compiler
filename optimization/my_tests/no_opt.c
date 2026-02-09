@@ -6,10 +6,10 @@ int func() {
   int y;
   int alive;
 
-  alive = 1;
+  alive = read();
   y = alive + 1;
   x = y + 3;
-  y = 4;
+  y = read();
   x = y + 3;
 
   return x;
