@@ -371,6 +371,7 @@ int main(int argc, char **argv) {
   if (m != NULL) {
     doOptimizations(m);
     LLVMDumpModule(m);
+    LLVMDisposeModule(m);
   } else {
     fprintf(stderr, "Module reference is null.\n");
     return 1;

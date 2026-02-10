@@ -9,7 +9,7 @@ int func(int p){
 	b = 20;
   c1 = a + b;
 
-	if (a < p){
+	if (a<p){
 		b = 30;
 	}
 	else {
