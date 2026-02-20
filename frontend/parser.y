@@ -87,8 +87,8 @@ whileStmt : WHILE '(' relExpr ')' stmt { $$ = createWhile($3, $5); }
 retStmt : RETURN intExpr ';' { $$ = createRet($2); }
         | RETURN '(' intExpr ')' ';' { $$ = createRet($3); }
 
-relExpr : intExpr '>' intExpr { $$ = createRExpr($1, $3, lt); }
-        | intExpr '<' intExpr { $$ = createRExpr($1, $3, gt); }
+relExpr : intExpr '<' intExpr { $$ = createRExpr($1, $3, lt); }
+        | intExpr '>' intExpr { $$ = createRExpr($1, $3, gt); }
         | intExpr EQ intExpr { $$ = createRExpr($1, $3, eq); }
         | intExpr NE intExpr { $$ = createRExpr($1, $3, neq); }
         | intExpr GE intExpr { $$ = createRExpr($1, $3, ge); }
