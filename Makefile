@@ -1,7 +1,7 @@
 compiler:
 	make -C frontend parser
-	make -C optimizer optimizer
+	make -C backend optimizer
 
 clean:
 	make -C frontend clean
-	make -C optimizer clean
+	make -C backend clean
