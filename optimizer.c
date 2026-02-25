@@ -357,23 +357,3 @@ void doOptimizations(LLVMModuleRef module) {
 
   } while (changes > 0);
 }
-
-int main(int argc, char **argv) {
-  LLVMModuleRef m;
-
-  if (argc == 2) {
-    m = createLLVMModule(argv[1]);
-  } else {
-    fprintf(stderr, "No file specified.\n");
-    return 1;
-  }
-
-  if (m != NULL) {
-    doOptimizations(m);
-    LLVMDumpModule(m);
-    LLVMDisposeModule(m);
-  } else {
-    fprintf(stderr, "Module reference is null.\n");
-    return 1;
-  }
-}
