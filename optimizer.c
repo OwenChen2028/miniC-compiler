@@ -344,7 +344,7 @@ void doOptimizations(LLVMModuleRef module) {
 
   int changes;
   do {
-    changes = doConstantPropagation(module); // has bugs
+    changes = doConstantPropagation(module);
 
     for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
          function = LLVMGetNextFunction(function)) {
