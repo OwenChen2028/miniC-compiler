@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (yyparse() == 0) {
-    if (root = NULL) {
+    if (root == NULL) {
       fprintf(stderr, "AST root is null.\n");
       return 1;
     }
