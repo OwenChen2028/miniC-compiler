@@ -22,5 +22,3 @@ Provide one argument: the source file you want to compile.
 * Optimizer: implemented but not yet integrated
 * IR Builder: not implemented
 * Assembly Generator: not implemented
-
-Optimization will be integrated after the IR phase is added.
