@@ -1,26 +1,13 @@
 #include "analysis.h"
 #include "ast.h"
 #include <string>
+#include <unordered_set>
 #include <vector>
 
-std::vector<std::vector<std::string>> symbol_tables;
+std::vector<std::unordered_set<std::string>> symbol_tables;
 int error_code = 0;
 
-void walk_nodes(astNode *node);
 void walk_stmt(astStmt *stmt);
-
-/*
-0 - no errors found
-1 - variable used before declaration
-2 - variable declared twice in one scope
-*/
-int semantic_analysis(astNode *root) {
-  symbol_tables.clear();
-  symbol_tables.push_back(std::vector<std::string>());
-  error_code = 0;
-  walk_nodes(root);
-  return error_code;
-}
 
 void walk_nodes(astNode *node) {
   if (!node || error_code) return;
@@ -33,9 +20,9 @@ void walk_nodes(astNode *node) {
     break;
 
   case ast_func:
-    symbol_tables.push_back(std::vector<std::string>());
+    symbol_tables.push_back(std::unordered_set<std::string>());
     if (node->func.param)
-      symbol_tables.back().push_back(node->func.param->var.name);
+      symbol_tables.back().insert(node->func.param->var.name);
     if (node->func.body->stmt.block.stmt_list) {
       for (astNode *n : *node->func.body->stmt.block.stmt_list) {
         walk_nodes(n);
@@ -51,8 +38,8 @@ void walk_nodes(astNode *node) {
   case ast_var: {
     int found = 0;
     for (int i = (int)symbol_tables.size() - 1; i >= 0; i--) {
-      for (int j = 0; j < (int)symbol_tables[i].size(); j++) {
-        if (symbol_tables[i][j] == node->var.name) {
+      for (std::string symbol : symbol_tables[i]) {
+        if (symbol == node->var.name) {
           found = 1;
           break;
         }
@@ -102,7 +89,7 @@ void walk_stmt(astStmt *stmt) {
     break;
 
   case ast_block:
-    symbol_tables.push_back(std::vector<std::string>());
+    symbol_tables.push_back(std::unordered_set<std::string>());
     if (stmt->block.stmt_list) {
       for (astNode *n : *stmt->block.stmt_list) {
         walk_nodes(n);
@@ -129,13 +116,25 @@ void walk_stmt(astStmt *stmt) {
     break;
 
   case ast_decl:
-    for (int i = 0; i < (int)symbol_tables.back().size(); i++) {
-      if (symbol_tables.back()[i] == stmt->decl.name) {
+    for (std::string symbol : symbol_tables.back()) {
+      if (symbol == stmt->decl.name) {
         error_code = 2;
         return;
       }
     }
-    symbol_tables.back().push_back(stmt->decl.name);
+    symbol_tables.back().insert(stmt->decl.name);
     break;
   }
+}
+
+/*
+0 - no errors found
+1 - variable used before declaration
+2 - variable declared twice in one scope
+*/
+int semantic_analysis(astNode *root) {
+  symbol_tables.clear();
+  error_code = 0;
+  walk_nodes(root);
+  return error_code;
 }

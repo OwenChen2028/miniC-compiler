@@ -1,29 +1,14 @@
 #include "ir_builder.h"
 #include "ast.h"
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 std::vector<std::vector<std::string>> symbol_tables;
-int error_code = 0;
-
-void walk_nodes(astNode *node);
-void walk_stmt(astStmt *stmt);
-
-/*
-0 - no errors found
-1 - variable used before declaration
-2 - variable declared twice in one scope
-*/
-int semantic_analysis(astNode *root) {
-  symbol_tables.clear();
-  symbol_tables.push_back(std::vector<std::string>());
-  error_code = 0;
-  walk_nodes(root);
-  return error_code;
-}
+std::unordered_map<std::string, LLVMValueRef> var_map;
 
 void walk_nodes(astNode *node) {
-  if (!node || error_code) return;
+  if (!node) return;
 
   switch (node->type) {
   case ast_prog:
@@ -39,7 +24,6 @@ void walk_nodes(astNode *node) {
     if (node->func.body->stmt.block.stmt_list) {
       for (astNode *n : *node->func.body->stmt.block.stmt_list) {
         walk_nodes(n);
-        if (error_code) break;
       }
     }
     symbol_tables.pop_back();
@@ -49,20 +33,7 @@ void walk_nodes(astNode *node) {
     break;
 
   case ast_var: {
-    int found = 0;
-    for (int i = (int)symbol_tables.size() - 1; i >= 0; i--) {
-      for (int j = 0; j < (int)symbol_tables[i].size(); j++) {
-        if (symbol_tables[i][j] == node->var.name) {
-          found = 1;
-          break;
-        }
-      }
-      if (found) break;
-    }
-    if (!found) {
-      error_code = 1;
-      return;
-    }
+    
     break;
   }
 
@@ -90,7 +61,7 @@ void walk_nodes(astNode *node) {
 }
 
 void walk_stmt(astStmt *stmt) {
-  if (!stmt || error_code) return;
+  if (!stmt) return;
 
   switch (stmt->type) {
   case ast_call:
@@ -138,4 +109,8 @@ void walk_stmt(astStmt *stmt) {
     symbol_tables.back().push_back(stmt->decl.name);
     break;
   }
+}
+
+void preprocess(astNode *root) {
+  walk_nodes(root);
 }
