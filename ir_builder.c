@@ -188,6 +188,23 @@ void genIRStmt(astStmt *stmt) {
 LLVMValueRef genIRExpr(astNode *node) {
 }
 
+void rmUnreachableBB() {
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMBasicBlockRef>> preds;
+
+  for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
+       function = LLVMGetNextFunction(function)) {
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+      LLVMValueRef terminator = LLVMGetBasicBlockTerminator(basicBlock);
+      for (int i = 0; i < LLVMGetNumSuccessors(terminator); ++i) {
+        preds[LLVMGetSuccessor(terminator, i)].insert(basicBlock);
+      }
+    }
+  }
+
+  
+}
+
 void build_ir(astNode *root) {
   preprocess(root);
 
@@ -247,5 +264,5 @@ void build_ir(astNode *root) {
     LLVMBuildBr(builder, retBB);
   }
 
-  // remove all BB without pred
+  rmUnreachableBB();
 }

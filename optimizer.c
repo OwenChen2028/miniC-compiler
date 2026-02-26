@@ -94,6 +94,7 @@ void doCommonSubexprElim(LLVMBasicBlockRef bb) {
       }
     } else
       visited.emplace(std::move(curr), instruction);
+
   }
 }
 
@@ -154,6 +155,7 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
         LLVMReplaceAllUsesWith(instruction, constInstr);
       }
     }
+
   }
 
   return changes;
@@ -181,6 +183,7 @@ int doConstantPropagation(LLVMModuleRef module) {
         }
 
         gen[basicBlock].insert(instruction);
+
       }
     }
   }
@@ -199,6 +202,7 @@ int doConstantPropagation(LLVMModuleRef module) {
 
         if (LLVMIsAStoreInst(instruction))
           stores.insert(instruction);
+
       }
     }
 
@@ -216,6 +220,7 @@ int doConstantPropagation(LLVMModuleRef module) {
           if (LLVMGetOperand(instr, 1) == LLVMGetOperand(instruction, 1))
             kill[basicBlock].insert(instr);
         }
+
       }
     }
   }
@@ -223,8 +228,7 @@ int doConstantPropagation(LLVMModuleRef module) {
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> in;
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> out;
 
-  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMBasicBlockRef>>
-      preds;
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMBasicBlockRef>> preds;
 
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
        function = LLVMGetNextFunction(function)) {
@@ -237,6 +241,7 @@ int doConstantPropagation(LLVMModuleRef module) {
       for (int i = 0; i < LLVMGetNumSuccessors(terminator); ++i) {
         preds[LLVMGetSuccessor(terminator, i)].insert(basicBlock);
       }
+
     }
   }
 
@@ -266,6 +271,7 @@ int doConstantPropagation(LLVMModuleRef module) {
 
         if (out[basicBlock] != oldOut)
           changed = 1;
+
       }
     }
   } while (changed);
@@ -325,6 +331,7 @@ int doConstantPropagation(LLVMModuleRef module) {
 
       for (LLVMValueRef instruction : marked)
         LLVMInstructionEraseFromParent(instruction);
+
     }
   }
 
@@ -336,21 +343,26 @@ void doOptimizations(LLVMModuleRef module) {
        function = LLVMGetNextFunction(function)) {
     for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
          basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
       doConstantFolding(basicBlock);
       doCommonSubexprElim(basicBlock);
       doDeadCodeElim(basicBlock);
+
     }
   }
 
   int changes;
   do {
     changes = doConstantPropagation(module);
+
     for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
          function = LLVMGetNextFunction(function)) {
       for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
            basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
         changes += doConstantFolding(basicBlock);
         doDeadCodeElim(basicBlock);
+
       }
     }
   } while (changes > 0);
