@@ -20,7 +20,7 @@ void walk_nodes(astNode *node) {
     break;
 
   case ast_func:
-    symbol_tables.push_back(std::unordered_set<std::string>());
+    symbol_tables.emplace_back(std::unordered_set<std::string>());
     if (node->func.param)
       symbol_tables.back().insert(node->func.param->var.name);
     if (node->func.body->stmt.block.stmt_list) {
@@ -42,7 +42,6 @@ void walk_nodes(astNode *node) {
         found = 1;
         break;
       }
-      if (found) break;
     }
     if (!found) {
       error_code = 1;
@@ -87,7 +86,7 @@ void walk_stmt(astStmt *stmt) {
     break;
 
   case ast_block:
-    symbol_tables.push_back(std::unordered_set<std::string>());
+    symbol_tables.emplace_back(std::unordered_set<std::string>());
     if (stmt->block.stmt_list) {
       for (astNode *n : *stmt->block.stmt_list) {
         walk_nodes(n);
@@ -131,7 +130,7 @@ void walk_stmt(astStmt *stmt) {
 int semantic_analysis(astNode *root) {
   symbol_tables.clear();
   error_code = 0;
-  symbol_tables.push_back(std::unordered_set<std::string>());
+  symbol_tables.emplace_back(std::unordered_set<std::string>());
   walk_nodes(root);
   symbol_tables.pop_back();
   return error_code;
