@@ -52,7 +52,7 @@ funcDec : INT ID '(' ')' block { $$ = createFunc($2, NULL, $5); }
 
 block : '{' blockBody '}' { $$ = createBlock($2); }
 
-blockBody : decls stmts { $$ = $1; $$->insert($$->end(), $2->begin(), $2->end()); }
+blockBody : decls stmts { $$ = $1; $$->insert($$->end(), $2->begin(), $2->end()); delete $2; }
 
 decls : /* empty */ { $$ = new std::vector<astNode *>(); }
       | decls varDec { $$ = $1; $$->push_back($2); }
