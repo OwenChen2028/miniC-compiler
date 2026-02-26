@@ -7,3 +7,5 @@ compiler:
 clean:
 	rm -f lex.yy.c y.tab.c y.tab.h
 	rm -f *.out
+	rm -r *.ll
+
