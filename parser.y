@@ -20,7 +20,7 @@ int yyerror(const char *);
 }
 
 %token <ival> NUM
-%token <sval> ID
+%token <sval> NAME
 %token INT VOID
 %token IF ELSE WHILE
 %token RETURN
@@ -47,8 +47,8 @@ printDec : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
 
 readDec : EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
 
-funcDec : INT ID '(' ')' block { $$ = createFunc($2, NULL, $5); }
-        | INT ID '(' INT ID ')' block { $$ = createFunc($2, createVar($5), $7); }
+funcDec : INT NAME '(' ')' block { $$ = createFunc($2, NULL, $5); }
+        | INT NAME '(' INT NAME ')' block { $$ = createFunc($2, createVar($5), $7); }
 
 block : '{' blockBody '}' { $$ = createBlock($2); }
 
@@ -57,7 +57,7 @@ blockBody : decls stmts { $$ = $1; $$->insert($$->end(), $2->begin(), $2->end())
 decls : /* empty */ { $$ = new std::vector<astNode *>(); }
       | decls varDec { $$ = $1; $$->push_back($2); }
 
-varDec : INT ID ';' { $$ = createDecl($2); }
+varDec : INT NAME ';' { $$ = createDecl($2); }
 
 stmts : /* empty */ { $$ = new std::vector<astNode *>(); }
       | stmts stmt { $$ = $1; $$->push_back($2); }
@@ -69,8 +69,8 @@ stmt : varAssign { $$ = $1; }
      | retStmt { $$ = $1; }
      | block { $$ = $1; }
 
-varAssign : ID '=' intExpr ';' { $$ = createAsgn(createVar($1), $3); }
-          | ID '=' readCall ';' { $$ = createAsgn(createVar($1), $3); }
+varAssign : NAME '=' intExpr ';' { $$ = createAsgn(createVar($1), $3); }
+          | NAME '=' readCall ';' { $$ = createAsgn(createVar($1), $3); }
 
 readCall : READ '(' ')' { $$ = createCall("read"); }
 
@@ -101,7 +101,7 @@ term : posTerm { $$ = $1; }
      | '-' posTerm { $$ = createUExpr((astNode *)$2, uminus); }
 
 posTerm : NUM { $$ = createCnst($1); }
-        | ID { $$ = createVar($1); }
+        | NAME { $$ = createVar($1); }
 %%
 
 int yyerror(const char *s) {

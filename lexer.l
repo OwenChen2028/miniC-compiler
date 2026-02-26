@@ -20,7 +20,7 @@ print { return PRINT; }
 ">=" { return GE; }
 "<=" { return LE; }
 [0-9]+ { yylval.ival = atoi(yytext); return NUM; }
-[a-zA-Z_][a-zA-Z0-9_]* { yylval.sval = strdup(yytext); return ID; }
+[a-zA-Z_][a-zA-Z0-9_]* { yylval.sval = strdup(yytext); return NAME; }
 [ \t\r\n]+ { /* skip */ }
 . { return yytext[0]; }
 %%

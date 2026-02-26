@@ -1,10 +1,12 @@
-#include "ast.h"
-#include "y.tab.h"
 #include "analysis.h"
+#include "ast.h"
 #include "ir_builder.h"
+#include "y.tab.h"
 #include <cstdio>
+#include <llvm-c/Core.h>
 
 extern astNode *root;
+extern LLVMModuleRef llvm_module;
 
 extern FILE *yyin;
 extern void yylex_destroy();
@@ -28,7 +30,6 @@ int main(int argc, char *argv[]) {
     switch (semantic_analysis(root)) {
     case 0:
       build_ir(root);
-      printNode(root);
       // if module valid, run optimizer
       break;
     case 1:
@@ -41,5 +42,7 @@ int main(int argc, char *argv[]) {
 
     yylex_destroy();
     freeNode(root);
+    //    LLVMDisposeModule(llvm_module);
+    LLVMShutdown();
   }
 }
