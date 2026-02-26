@@ -4,11 +4,14 @@
 #include <unordered_map>
 #include <vector>
 
-std::vector<std::vector<std::string>> symbol_tables;
+std::vector<std::unordered_map<std::string, std::string>> renamings;
+std::unordered_map<std::string, int> id_counter;
+
 std::unordered_map<std::string, LLVMValueRef> var_map;
 
 void walk_nodes(astNode *node) {
-  if (!node) return;
+  if (!node)
+    return;
 
   switch (node->type) {
   case ast_prog:
@@ -18,22 +21,32 @@ void walk_nodes(astNode *node) {
     break;
 
   case ast_func:
-    symbol_tables.push_back(std::vector<std::string>());
-    if (node->func.param)
-      symbol_tables.back().push_back(node->func.param->var.name);
+    renamings.emplace_back(std::unordered_map<std::string, std::string>());
+    if (node->func.param) {
+      std::string orig_name = node->func.param->var.name;
+      node->func.param->var.name =
+          orig_name + std::to_string(id_counter[orig_name]);
+      renamings.back()[orig_name] = node->func.param->var.name;
+      ++id_counter[orig_name];
+    }
     if (node->func.body->stmt.block.stmt_list) {
       for (astNode *n : *node->func.body->stmt.block.stmt_list) {
         walk_nodes(n);
       }
     }
-    symbol_tables.pop_back();
+    renamings.pop_back();
     break;
 
   case ast_extern:
     break;
 
   case ast_var: {
-    
+    for (int i = (int)symbol_tables.size() - 1; i >= 0; i--) {
+      if (symbol_tables[i].find(node->var.name) != symbol_tables[i].end()) {
+        found = 1;
+        break;
+      }
+    }
     break;
   }
 
@@ -61,7 +74,8 @@ void walk_nodes(astNode *node) {
 }
 
 void walk_stmt(astStmt *stmt) {
-  if (!stmt) return;
+  if (!stmt)
+    return;
 
   switch (stmt->type) {
   case ast_call:
@@ -73,14 +87,13 @@ void walk_stmt(astStmt *stmt) {
     break;
 
   case ast_block:
-    symbol_tables.push_back(std::vector<std::string>());
+    renamings.push_back(std::unordered_map<std::string, std::string>());
     if (stmt->block.stmt_list) {
       for (astNode *n : *stmt->block.stmt_list) {
         walk_nodes(n);
-        if (error_code) break;
       }
     }
-    symbol_tables.pop_back();
+    renamings.pop_back();
     break;
 
   case ast_while:
@@ -99,18 +112,21 @@ void walk_stmt(astStmt *stmt) {
     walk_nodes(stmt->asgn.rhs);
     break;
 
-  case ast_decl:
-    for (int i = 0; i < (int)symbol_tables.back().size(); i++) {
-      if (symbol_tables.back()[i] == stmt->decl.name) {
-        error_code = 2;
-        return;
-      }
-    }
-    symbol_tables.back().push_back(stmt->decl.name);
+  case ast_decl: {
+    std::string orig_name = stmt->decl.name;
+    stmt->decl.name = orig_name + std::to_string(id_counter[orig_name]);
+    renamings.back()[orig_name] = stmt->decl.name;
+    ++id_counter[orig_name];
     break;
+  }
   }
 }
 
 void preprocess(astNode *root) {
+  renamings.clear();
+  id_counter.clear();
+  var_map.clear();
   walk_nodes(root);
 }
+
+void build_ir(astNode *root) { preprocess(root); }

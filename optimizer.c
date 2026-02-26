@@ -107,7 +107,8 @@ void doDeadCodeElim(LLVMBasicBlockRef bb) {
       LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
 
       if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
-          LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
+          LLVMIsATerminatorInst(instruction) ||
+          LLVMIsAAllocaInst(instruction)) {
         instruction = nextInstr;
         continue;
       }

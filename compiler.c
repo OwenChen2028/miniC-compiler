@@ -1,9 +1,9 @@
-#include "ast.h"
 #include "analysis.h"
+#include "ast.h"
 #include "y.tab.h"
 #include <cstdio>
 
-extern astNode* root;
+extern astNode *root;
 
 extern FILE *yyin;
 extern void yylex_destroy();

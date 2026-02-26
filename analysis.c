@@ -10,7 +10,8 @@ int error_code = 0;
 void walk_stmt(astStmt *stmt);
 
 void walk_nodes(astNode *node) {
-  if (!node || error_code) return;
+  if (!node || error_code)
+    return;
 
   switch (node->type) {
   case ast_prog:
@@ -26,7 +27,8 @@ void walk_nodes(astNode *node) {
     if (node->func.body->stmt.block.stmt_list) {
       for (astNode *n : *node->func.body->stmt.block.stmt_list) {
         walk_nodes(n);
-        if (error_code) break;
+        if (error_code)
+          break;
       }
     }
     symbol_tables.pop_back();
@@ -74,7 +76,8 @@ void walk_nodes(astNode *node) {
 }
 
 void walk_stmt(astStmt *stmt) {
-  if (!stmt || error_code) return;
+  if (!stmt || error_code)
+    return;
 
   switch (stmt->type) {
   case ast_call:
@@ -90,7 +93,8 @@ void walk_stmt(astStmt *stmt) {
     if (stmt->block.stmt_list) {
       for (astNode *n : *stmt->block.stmt_list) {
         walk_nodes(n);
-        if (error_code) break;
+        if (error_code)
+          break;
       }
     }
     symbol_tables.pop_back();
@@ -113,7 +117,8 @@ void walk_stmt(astStmt *stmt) {
     break;
 
   case ast_decl:
-    if (symbol_tables.back().find(stmt->decl.name) != symbol_tables.back().end()) {
+    if (symbol_tables.back().find(stmt->decl.name) !=
+        symbol_tables.back().end()) {
       error_code = 2;
       return;
     }
@@ -130,8 +135,6 @@ void walk_stmt(astStmt *stmt) {
 int semantic_analysis(astNode *root) {
   symbol_tables.clear();
   error_code = 0;
-  symbol_tables.emplace_back(std::unordered_set<std::string>());
   walk_nodes(root);
-  symbol_tables.pop_back();
   return error_code;
 }
