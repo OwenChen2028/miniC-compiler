@@ -131,7 +131,7 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
 
     LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
 
-    if (op == LLVMAdd || op == LLVMSub || op == LLVMMul || op == LLVMSDiv) {
+    if (op == LLVMAdd || op == LLVMSub || op == LLVMMul) {
       LLVMValueRef operA = LLVMGetOperand(instruction, 0);
       LLVMValueRef operB = LLVMGetOperand(instruction, 1);
 
@@ -233,7 +233,7 @@ int doConstantPropagation(LLVMModuleRef module) {
       out[basicBlock] = gen[basicBlock];
 
       LLVMValueRef terminator = LLVMGetBasicBlockTerminator(basicBlock);
-      for (int i = 0; i < LLVMGetNumSuccessors(terminator); ++i) {
+      for (unsigned int i = 0; i < LLVMGetNumSuccessors(terminator); ++i) {
         preds[LLVMGetSuccessor(terminator, i)].insert(basicBlock);
       }
     }
