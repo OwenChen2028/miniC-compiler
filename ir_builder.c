@@ -1,5 +1,6 @@
 #include "ir_builder.h"
 #include "ast.h"
+#include <cassert>
 #include <cstring>
 #include <llvm-c/Core.h>
 #include <string.h>
@@ -238,11 +239,15 @@ LLVMBasicBlockRef genIRStmt(astStmt *stmt, LLVMBasicBlockRef startBB) {
     return LLVMAppendBasicBlock(func, "");
   }
 
-  case ast_block:
+  case ast_block: {
     LLVMBasicBlockRef prevBB = startBB;
     for (astNode *n : *stmt->block.stmt_list)
       prevBB = genIRStmt(&n->stmt, prevBB);
     return prevBB;
+  }
+
+  case ast_decl:
+    return startBB;
   }
 
   return NULL;

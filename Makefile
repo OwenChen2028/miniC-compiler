@@ -1,7 +1,7 @@
 compiler:
 	lex lexer.l
 	yacc -d parser.y
-	g++ compiler.c ast.c lex.yy.c y.tab.c analysis.c ir_builder.c -o compiler.out \
+	g++ -g compiler.c ast.c lex.yy.c y.tab.c analysis.c ir_builder.c -o compiler.out \
 		`llvm-config --cxxflags --ldflags --system-libs --libs core support`
 
 clean:
