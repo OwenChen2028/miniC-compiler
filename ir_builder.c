@@ -1,5 +1,6 @@
 #include "ir_builder.h"
 #include "ast.h"
+#include <cstring>
 #include <llvm-c/Core.h>
 #include <string.h>
 #include <string>
@@ -10,7 +11,7 @@
 std::vector<std::unordered_map<std::string, std::string>> renamings;
 std::unordered_map<std::string, int> var_counter;
 
-LLVMModuleRef llvm_module;
+LLVMModuleRef module;
 
 std::unordered_set<std::string> var_set;
 std::unordered_map<std::string, LLVMValueRef> var_map;
@@ -157,8 +158,8 @@ void builder_walk_nodes(astNode *node) {
 
   switch (node->type) {
   case ast_prog:
-    llvm_module = LLVMModuleCreateWithName("");
-    LLVMSetTarget(llvm_module, "x86_64-pc-linux-gnu");
+    module = LLVMModuleCreateWithName("");
+    LLVMSetTarget(module, "x86_64-pc-linux-gnu");
 
     builder_walk_nodes(node->prog.ext1);
     builder_walk_nodes(node->prog.ext2);
@@ -172,7 +173,7 @@ void builder_walk_nodes(astNode *node) {
         LLVMFunctionType(LLVMInt32Type(), node->func.param ? params : NULL,
                          node->func.param ? 1 : 0, 0);
     LLVMValueRef func =
-        LLVMAddFunction(llvm_module, node->func.name, func_type);
+        LLVMAddFunction(module, node->func.name, func_type);
 
     entryBB = LLVMAppendBasicBlock(func, "entry");
 
@@ -180,27 +181,28 @@ void builder_walk_nodes(astNode *node) {
     LLVMPositionBuilderAtEnd(builder, entryBB);
 
     var_map.clear();
-    for (std::string var_name : var_set) {
+    for (std::string var_name : var_set) { // includes func param
       LLVMValueRef alloc_stmt =
           LLVMBuildAlloca(builder, LLVMInt32Type(), var_name.c_str());
       var_map[var_name] = alloc_stmt;
     }
 
-    ret_ref =
-        LLVMBuildAlloca(builder, LLVMInt32Type(),
-                        "ret"); // no collision, var "ret" renamed to "ret0"
+    // cannot collide with a variable name due to renaming
+    ret_ref = LLVMBuildAlloca(builder, LLVMInt32Type(), "ret");
 
+    LLVMBuildStore(builder, LLVMGetParam(func, 0),
+                   var_map[node->func.param->var.name]);
     break;
   }
 
   case ast_extern:
-    if (node->ext.name == "print") {
+    if (std::strcmp(node->ext.name, "print") == 0) {
       LLVMTypeRef params[] = {LLVMInt32Type()};
       LLVMTypeRef func_type = LLVMFunctionType(LLVMVoidType(), params, 1, 0);
-      print_func = LLVMAddFunction(llvm_module, "print", func_type);
-    } else if (node->ext.name == "read") {
+      print_func = LLVMAddFunction(module, "print", func_type);
+    } else if (std::strcmp(node->ext.name, "read") == 0) {
       LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
-      read_func = LLVMAddFunction(llvm_module, "read", func_type);
+      read_func = LLVMAddFunction(module, "read", func_type);
     }
     break;
 

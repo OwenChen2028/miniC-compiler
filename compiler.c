@@ -6,7 +6,7 @@
 #include <llvm-c/Core.h>
 
 extern astNode *root;
-extern LLVMModuleRef llvm_module;
+extern LLVMModuleRef module;
 
 extern FILE *yyin;
 extern void yylex_destroy();
@@ -22,14 +22,19 @@ int main(int argc, char *argv[]) {
   }
 
   if (yyparse() == 0) {
-    if (root == NULL) {
-      fprintf(stderr, "AST root is null.\n");
+    if (!root) {
+      fprintf(stderr, "AST root is NULL.\n");
       return 1;
     }
 
     switch (semantic_analysis(root)) {
     case 0:
       build_ir(root);
+      if (!module) {
+        fprintf(stderr, "LLVM Module is NULL.\n");
+        return 1;
+      }
+      LLVMDumpModule(module);
       // if module valid, run optimizer
       break;
     case 1:
@@ -42,7 +47,7 @@ int main(int argc, char *argv[]) {
 
     yylex_destroy();
     freeNode(root);
-    //    LLVMDisposeModule(llvm_module);
+    LLVMDisposeModule(module);
     LLVMShutdown();
   }
 }
