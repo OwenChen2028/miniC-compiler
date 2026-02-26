@@ -45,7 +45,7 @@ void preprocess_walk_nodes(astNode *node) {
     if (node->func.param) {
       std::string orig_name = node->func.param->var.name;
       node->func.param->var.name =
-          strdup((orig_name + std::to_string(var_counter[orig_name])).c_str());
+          strdup((orig_name + "-" + std::to_string(var_counter[orig_name])).c_str());
       renamings.back()[orig_name] = node->func.param->var.name;
       ++var_counter[orig_name];
       var_set.insert(node->func.param->var.name);
@@ -137,7 +137,7 @@ void preprocess_walk_stmt(astStmt *stmt) {
   case ast_decl: {
     std::string orig_name = stmt->decl.name;
     stmt->decl.name =
-        strdup((orig_name + std::to_string(var_counter[orig_name])).c_str());
+        strdup((orig_name + "-" + std::to_string(var_counter[orig_name])).c_str());
     renamings.back()[orig_name] = stmt->decl.name;
     ++var_counter[orig_name];
     var_set.insert(stmt->decl.name);
