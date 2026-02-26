@@ -94,7 +94,6 @@ void doCommonSubexprElim(LLVMBasicBlockRef bb) {
       }
     } else
       visited.emplace(std::move(curr), instruction);
-
   }
 }
 
@@ -155,7 +154,6 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
         LLVMReplaceAllUsesWith(instruction, constInstr);
       }
     }
-
   }
 
   return changes;
@@ -183,7 +181,6 @@ int doConstantPropagation(LLVMModuleRef module) {
         }
 
         gen[basicBlock].insert(instruction);
-
       }
     }
   }
@@ -202,7 +199,6 @@ int doConstantPropagation(LLVMModuleRef module) {
 
         if (LLVMIsAStoreInst(instruction))
           stores.insert(instruction);
-
       }
     }
 
@@ -220,7 +216,6 @@ int doConstantPropagation(LLVMModuleRef module) {
           if (LLVMGetOperand(instr, 1) == LLVMGetOperand(instruction, 1))
             kill[basicBlock].insert(instr);
         }
-
       }
     }
   }
@@ -241,7 +236,6 @@ int doConstantPropagation(LLVMModuleRef module) {
       for (int i = 0; i < LLVMGetNumSuccessors(terminator); ++i) {
         preds[LLVMGetSuccessor(terminator, i)].insert(basicBlock);
       }
-
     }
   }
 
@@ -271,7 +265,6 @@ int doConstantPropagation(LLVMModuleRef module) {
 
         if (out[basicBlock] != oldOut)
           changed = 1;
-
       }
     }
   } while (changed);
@@ -331,7 +324,6 @@ int doConstantPropagation(LLVMModuleRef module) {
 
       for (LLVMValueRef instruction : marked)
         LLVMInstructionEraseFromParent(instruction);
-
     }
   }
 
@@ -347,7 +339,6 @@ void doOptimizations(LLVMModuleRef module) {
       doConstantFolding(basicBlock);
       doCommonSubexprElim(basicBlock);
       doDeadCodeElim(basicBlock);
-
     }
   }
 
@@ -362,7 +353,6 @@ void doOptimizations(LLVMModuleRef module) {
 
         changes += doConstantFolding(basicBlock);
         doDeadCodeElim(basicBlock);
-
       }
     }
   } while (changes > 0);

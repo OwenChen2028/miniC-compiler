@@ -182,6 +182,26 @@ void genIRStmt(astStmt *stmt) {
 
   case ast_while:
     LLVMPositionBuilderAtEnd(builder, currentBB);
+    
+    break;
+
+  case ast_if:
+    
+    break;
+
+  case ast_ret: {
+    LLVMPositionBuilderAtEnd(builder, currentBB);
+    LLVMValueRef ret_val = genIRExpr(stmt->ret.expr);
+    LLVMBuildStore(builder, ret_val, ret_ref);
+    LLVMBuildBr(builder, retBB);
+    currentBB = LLVMAppendBasicBlock(func, "");
+    break;
+  }
+
+  case ast_block:
+    for (astNode *n : *stmt->block.stmt_list)
+      genIRStmt(&n->stmt);
+    break;
   }
 }
 
@@ -192,19 +212,22 @@ LLVMValueRef genIRExpr(astNode *node) {
   switch (node->type) {
   case ast_cnst:
     return LLVMConstInt(LLVMInt32Type(), node->cnst.value, 0);
+
   case ast_var: {
     LLVMValueRef var_name = var_map[node->var.name];
     return LLVMBuildLoad2(builder, LLVMInt32Type(), var_name, "");
   }
+
   case ast_uexpr: {
     LLVMValueRef zero = LLVMConstInt(LLVMInt32Type(), 0, 0);
     return LLVMBuildSub(builder, zero, genIRExpr(node->uexpr.expr), "");
   }
+
   case ast_bexpr: {
     LLVMValueRef lhs = genIRExpr(node->bexpr.lhs);
     LLVMValueRef rhs = genIRExpr(node->bexpr.rhs);
 
-    switch(node->bexpr.op) {
+    switch (node->bexpr.op) {
     case add:
       return LLVMBuildAdd(builder, lhs, rhs, "");
     case sub:
@@ -217,11 +240,12 @@ LLVMValueRef genIRExpr(astNode *node) {
 
     return NULL;
   }
+
   case ast_rexpr: {
     LLVMValueRef lhs = genIRExpr(node->rexpr.lhs);
     LLVMValueRef rhs = genIRExpr(node->rexpr.rhs);
 
-    switch(node->rexpr.op) {
+    switch (node->rexpr.op) {
     case lt:
       return LLVMBuildICmp(builder, LLVMIntSLT, lhs, rhs, "");
     case gt:
@@ -238,6 +262,7 @@ LLVMValueRef genIRExpr(astNode *node) {
 
     return NULL;
   }
+
   case ast_call: { // must be read
     LLVMTypeRef read_type = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
     return LLVMBuildCall2(builder, read_type, read_func, NULL, 0, "");
@@ -270,16 +295,15 @@ void markReachableBB(LLVMBasicBlockRef basicBlock) {
 void rmUnreachableBB() {
   markReachableBB(entryBB);
 
-  for (LLVMValueRef function = LLVMGetFirstFunction(module); function; function = LLVMGetNextFunction(function)) {
-    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function); basicBlock;) {
+  for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
+       function = LLVMGetNextFunction(function)) {
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock;) {
 
       LLVMBasicBlockRef nextBB = LLVMGetNextBasicBlock(basicBlock);
-
       if (visitedBB.find(basicBlock) == visitedBB.end())
         LLVMDeleteBasicBlock(basicBlock);
-
       basicBlock = nextBB;
-
     }
   }
 }
@@ -321,7 +345,8 @@ void build_ir(astNode *root) {
   ret_ref = LLVMBuildAlloca(builder, LLVMInt32Type(), "ret");
 
   if (node->func.param)
-    LLVMBuildStore(builder, LLVMGetParam(func, 0), var_map[node->func.param->var.name]);
+    LLVMBuildStore(builder, LLVMGetParam(func, 0),
+                   var_map[node->func.param->var.name]);
 
   retBB = LLVMAppendBasicBlock(func, "return");
   LLVMPositionBuilderAtEnd(builder, retBB);
@@ -331,9 +356,7 @@ void build_ir(astNode *root) {
 
   currentBB = entryBB;
 
-  if (node->func.body->stmt.block.stmt_list)
-    for (astNode *n : *node->func.body->stmt.block.stmt_list)
-      genIRStmt(&n->stmt);
+  genIRStmt(&node->func.body->stmt);
 
   LLVMValueRef terminator = LLVMGetBasicBlockTerminator(currentBB);
   if (!terminator) {
