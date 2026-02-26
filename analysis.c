@@ -117,8 +117,7 @@ void walk_stmt(astStmt *stmt) {
     break;
 
   case ast_decl:
-    if (symbol_tables.back().find(stmt->decl.name) !=
-        symbol_tables.back().end()) {
+    if (symbol_tables.back().find(stmt->decl.name) != symbol_tables.back().end()) {
       error_code = 2;
       return;
     }

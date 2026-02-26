@@ -107,8 +107,7 @@ void doDeadCodeElim(LLVMBasicBlockRef bb) {
       LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
 
       if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
-          LLVMIsATerminatorInst(instruction) ||
-          LLVMIsAAllocaInst(instruction)) {
+          LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
         instruction = nextInstr;
         continue;
       }
@@ -352,6 +351,7 @@ void doOptimizations(LLVMModuleRef module) {
          function = LLVMGetNextFunction(function)) {
       for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
            basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
         changes += doConstantFolding(basicBlock);
         doDeadCodeElim(basicBlock);
       }
