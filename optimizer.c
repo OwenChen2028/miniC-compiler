@@ -132,7 +132,7 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
 
     LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
 
-    if (op == LLVMAdd || op == LLVMSub || op == LLVMMul) {
+    if (op == LLVMAdd || op == LLVMSub || op == LLVMMul || op == LLVMDiv) {
       LLVMValueRef operA = LLVMGetOperand(instruction, 0);
       LLVMValueRef operB = LLVMGetOperand(instruction, 1);
 

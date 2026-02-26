@@ -174,18 +174,78 @@ void genIRStmt(astStmt *stmt) {
     LLVMPositionBuilderAtEnd(builder, currentBB);
     LLVMValueRef print_args[] = {genIRExpr(stmt->call.param)};
     LLVMTypeRef print_params[] = {LLVMInt32Type()};
-    LLVMTypeRef print_type = LLVMFunctionType(LLVMVoidType(), print_params, 1, 0);
+    LLVMTypeRef print_type =
+        LLVMFunctionType(LLVMVoidType(), print_params, 1, 0);
     LLVMBuildCall2(builder, print_type, print_func, print_args, 1, "");
     break;
   }
 
   case ast_while:
     LLVMPositionBuilderAtEnd(builder, currentBB);
-    
   }
 }
 
 LLVMValueRef genIRExpr(astNode *node) {
+  if (!node) {
+    return NULL;
+  }
+
+  switch (node->type) {
+  case ast_cnst:
+    return LLVMConstInt(LLVMInt32Type(), node->cnst.value, 0);
+  case ast_var: {
+    LLVMValueRef var_name = var_map[node->var.name];
+    return LLVMBuildLoad2(builder, LLVMInt32Type(), var_name, "");
+  }
+  case ast_uexpr: {
+    LLVMValueRef zero = LLVMConstInt(LLVMInt32Type(), 0, 0);
+    return LLVMBuildSub(builder, zero, genIRExpr(node->uexpr.expr), "");
+  }
+  case ast_bexpr: {
+    LLVMValueRef lhs = genIRExpr(node->bexpr.lhs);
+    LLVMValueRef rhs = genIRExpr(node->bexpr.rhs);
+
+    switch(node->bexpr.op) {
+    case add:
+      return LLVMBuildAdd(builder, lhs, rhs, "");
+    case sub:
+      return LLVMBuildSub(builder, lhs, rhs, "");
+    case mul:
+      return LLVMBuildMul(builder, lhs, rhs, "");
+    case divide:
+      return LLVMBuildSDiv(builder, lhs, rhs, "");
+    }
+
+    return NULL;
+  }
+  case ast_rexpr: {
+    LLVMValueRef lhs = genIRExpr(node->rexpr.lhs);
+    LLVMValueRef rhs = genIRExpr(node->rexpr.rhs);
+
+    switch(node->rexpr.op) {
+    case lt:
+      return LLVMBuildICmp(builder, LLVMIntSLT, lhs, rhs, "");
+    case gt:
+      return LLVMBuildICmp(builder, LLVMIntSLE, lhs, rhs, "");
+    case le:
+      return LLVMBuildICmp(builder, LLVMIntSGT, lhs, rhs, "");
+    case ge:
+      return LLVMBuildICmp(builder, LLVMIntSGE, lhs, rhs, "");
+    case eq:
+      return LLVMBuildICmp(builder, LLVMIntEQ, lhs, rhs, "");
+    case neq:
+      return LLVMBuildICmp(builder, LLVMIntNE, lhs, rhs, "");
+    }
+
+    return NULL;
+  }
+  case ast_call: { // must be read
+    LLVMTypeRef read_type = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+    return LLVMBuildCall2(builder, read_type, read_func, NULL, 0, "");
+  }
+  }
+
+  return NULL;
 }
 
 void rmUnreachableBB() {
@@ -200,7 +260,6 @@ void rmUnreachableBB() {
       for (int i = 0; i < LLVMGetNumSuccessors(terminator); ++i) {
         ++num_preds[LLVMGetSuccessor(terminator, i)];
       }
-
     }
   }
 
