@@ -1,6 +1,7 @@
 #include "analysis.h"
 #include "ast.h"
 #include "ir_builder.h"
+#include "optimizer.h"
 #include "y.tab.h"
 #include <cstdio>
 #include <llvm-c/Core.h>
@@ -29,13 +30,15 @@ int main(int argc, char *argv[]) {
 
     switch (semantic_analysis(root)) {
     case 0:
+      //printNode(root);
       build_ir(root);
       if (!module) {
         fprintf(stderr, "LLVM Module is NULL.\n");
         return 1;
       }
+      doOptimizations(module);
       LLVMDumpModule(module);
-      // if module valid, run optimizer
+      // TODO: generate assembly
       break;
     case 1:
       printf("Variable used before declaration.\n");

@@ -1,6 +1,5 @@
 #include "ir_builder.h"
 #include "ast.h"
-#include <cassert>
 #include <cstring>
 #include <llvm-c/Core.h>
 #include <string.h>
@@ -170,7 +169,7 @@ LLVMBasicBlockRef genIRStmt(astStmt *stmt, LLVMBasicBlockRef startBB) {
     return startBB;
   }
 
-  case ast_call: { // must be print
+  case ast_call: { // must be print call
     LLVMPositionBuilderAtEnd(builder, startBB);
     LLVMValueRef args[] = {genIRExpr(stmt->call.param)};
     LLVMTypeRef params[] = {LLVMInt32Type()};
@@ -311,7 +310,7 @@ LLVMValueRef genIRExpr(astNode *node) {
     return NULL;
   }
 
-  case ast_call: { // must be read
+  case ast_stmt: { // must be read call
     LLVMTypeRef type = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
     return LLVMBuildCall2(builder, type, read_func, NULL, 0, "");
   }

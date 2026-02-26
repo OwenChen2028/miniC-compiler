@@ -19,6 +19,6 @@ Provide one argument: the source file you want to compile.
 ## Status
 
 * Parser: implemented
-* Optimizer: implemented but not yet integrated
-* IR Builder: not implemented
-* Assembly Generator: not implemented
+* Optimizer: implemented
+* IR Builder: implemented
+* Assembly Generator: TODO
