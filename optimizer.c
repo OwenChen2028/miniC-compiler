@@ -336,7 +336,6 @@ void doOptimizations(LLVMModuleRef module) {
        function = LLVMGetNextFunction(function)) {
     for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
          basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
-
       doConstantFolding(basicBlock);
       doCommonSubexprElim(basicBlock);
       doDeadCodeElim(basicBlock);
@@ -346,16 +345,13 @@ void doOptimizations(LLVMModuleRef module) {
   int changes;
   do {
     changes = doConstantPropagation(module);
-
     for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
          function = LLVMGetNextFunction(function)) {
       for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
            basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
-
         changes += doConstantFolding(basicBlock);
         doDeadCodeElim(basicBlock);
       }
     }
-
   } while (changes > 0);
 }

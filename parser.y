@@ -9,7 +9,7 @@ extern int yylex();
 extern int yylex_destroy();
 extern int yywrap();
 
-int yyerror(char *);
+int yyerror(const char *);
 %}
 
 %union {
@@ -104,7 +104,7 @@ posTerm : NUM { $$ = createCnst($1); }
         | ID { $$ = createVar($1); }
 %%
 
-int yyerror(char *s) {
+int yyerror(const char *s) {
   fprintf(stderr, "%s\n", s);
   return 0;
 }

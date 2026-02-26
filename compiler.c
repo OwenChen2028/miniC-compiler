@@ -1,6 +1,7 @@
-#include "analysis.h"
 #include "ast.h"
 #include "y.tab.h"
+#include "analysis.h"
+#include "ir_builder.h"
 #include <cstdio>
 
 extern astNode *root;
@@ -26,7 +27,8 @@ int main(int argc, char *argv[]) {
 
     switch (semantic_analysis(root)) {
     case 0:
-      // run IR builder
+      build_ir(root);
+      printNode(root);
       // if module valid, run optimizer
       break;
     case 1:
