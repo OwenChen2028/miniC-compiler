@@ -16,10 +16,15 @@ LLVMModuleRef module;
 std::unordered_set<std::string> var_set;
 std::unordered_map<std::string, LLVMValueRef> var_map;
 
+LLVMValueRef func;
 LLVMValueRef print_func;
 LLVMValueRef read_func;
 
+LLVMBuilderRef builder;
+
 LLVMBasicBlockRef entryBB;
+LLVMBasicBlockRef retBB;
+LLVMBasicBlockRef currentBB;
 
 LLVMValueRef ret_ref;
 
@@ -150,128 +155,81 @@ void preprocess(astNode *root) {
   preprocess_walk_nodes(root);
 }
 
-void builder_walk_stmt(astStmt *);
-
-void builder_walk_nodes(astNode *node) {
-  if (!node)
-    return;
-
-  switch (node->type) {
-  case ast_prog:
-    module = LLVMModuleCreateWithName("");
-    LLVMSetTarget(module, "x86_64-pc-linux-gnu");
-
-    builder_walk_nodes(node->prog.ext1);
-    builder_walk_nodes(node->prog.ext2);
-
-    builder_walk_nodes(node->prog.func);
-    break;
-
-  case ast_func: {
-    LLVMTypeRef params[] = {LLVMInt32Type()};
-    LLVMTypeRef func_type =
-        LLVMFunctionType(LLVMInt32Type(), node->func.param ? params : NULL,
-                         node->func.param ? 1 : 0, 0);
-    LLVMValueRef func =
-        LLVMAddFunction(module, node->func.name, func_type);
-
-    entryBB = LLVMAppendBasicBlock(func, "entry");
-
-    LLVMBuilderRef builder = LLVMCreateBuilder();
-    LLVMPositionBuilderAtEnd(builder, entryBB);
-
-    var_map.clear();
-    for (std::string var_name : var_set) { // includes func param
-      LLVMValueRef alloc_stmt =
-          LLVMBuildAlloca(builder, LLVMInt32Type(), var_name.c_str());
-      var_map[var_name] = alloc_stmt;
-    }
-
-    // cannot collide with a variable name due to renaming
-    ret_ref = LLVMBuildAlloca(builder, LLVMInt32Type(), "ret");
-
-    LLVMBuildStore(builder, LLVMGetParam(func, 0),
-                   var_map[node->func.param->var.name]);
-    break;
-  }
-
-  case ast_extern:
-    if (std::strcmp(node->ext.name, "print") == 0) {
-      LLVMTypeRef params[] = {LLVMInt32Type()};
-      LLVMTypeRef func_type = LLVMFunctionType(LLVMVoidType(), params, 1, 0);
-      print_func = LLVMAddFunction(module, "print", func_type);
-    } else if (std::strcmp(node->ext.name, "read") == 0) {
-      LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
-      read_func = LLVMAddFunction(module, "read", func_type);
-    }
-    break;
-
-  case ast_var: {
-    break;
-  }
-
-  case ast_cnst:
-    break;
-
-  case ast_rexpr:
-    builder_walk_nodes(node->rexpr.lhs);
-    builder_walk_nodes(node->rexpr.rhs);
-    break;
-
-  case ast_bexpr:
-    builder_walk_nodes(node->bexpr.lhs);
-    builder_walk_nodes(node->bexpr.rhs);
-    break;
-
-  case ast_uexpr:
-    builder_walk_nodes(node->uexpr.expr);
-    break;
-
-  case ast_stmt:
-    builder_walk_stmt(&node->stmt);
-    break;
-  }
-}
-
-void builder_walk_stmt(astStmt *stmt) {
+void genIRStmt(astStmt *stmt) {
   if (!stmt)
     return;
 
   switch (stmt->type) {
-  case ast_call:
-    builder_walk_nodes(stmt->call.param);
-    break;
-
-  case ast_ret:
-    builder_walk_nodes(stmt->ret.expr);
-    break;
-
-  case ast_block:
-    break;
-
-  case ast_while:
-    builder_walk_nodes(stmt->whilen.cond);
-    builder_walk_nodes(stmt->whilen.body);
-    break;
-
-  case ast_if:
-    builder_walk_nodes(stmt->ifn.cond);
-    builder_walk_nodes(stmt->ifn.if_body);
-    builder_walk_nodes(stmt->ifn.else_body);
-    break;
-
   case ast_asgn:
-    builder_walk_nodes(stmt->asgn.lhs);
-    builder_walk_nodes(stmt->asgn.rhs);
-    break;
+  
+  break;
 
-  case ast_decl: {
-    break;
+  
   }
-  }
+}
+
+LLVMValueRef genIRExpr(astNode *node) {
+  
 }
 
 void build_ir(astNode *root) {
   preprocess(root);
-  builder_walk_nodes(root);
+
+  module = LLVMModuleCreateWithName("");
+  LLVMSetTarget(module, "x86_64-pc-linux-gnu");
+
+  LLVMTypeRef print_params[] = {LLVMInt32Type()};
+  LLVMTypeRef print_type = LLVMFunctionType(LLVMVoidType(), print_params, 1, 0);
+  print_func = LLVMAddFunction(module, "print", print_type);
+
+  LLVMTypeRef read_type = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+  read_func = LLVMAddFunction(module, "read", read_type);
+
+  astNode *node = root->prog.func;
+
+  LLVMTypeRef func_params[] = {LLVMInt32Type()};
+  LLVMTypeRef func_type =
+      LLVMFunctionType(LLVMInt32Type(), node->func.param ? func_params : NULL,
+                       node->func.param ? 1 : 0, 0);
+  func = LLVMAddFunction(module, node->func.name, func_type);
+
+  builder = LLVMCreateBuilder();
+
+  entryBB = LLVMAppendBasicBlock(func, "entry");
+  LLVMPositionBuilderAtEnd(builder, entryBB);
+
+  var_map.clear();
+  for (std::string var_name : var_set) { // includes func param
+    LLVMValueRef alloc_stmt =
+        LLVMBuildAlloca(builder, LLVMInt32Type(), var_name.c_str());
+    var_map[var_name] = alloc_stmt;
+  }
+
+  // cannot collide with a variable name due to renaming
+  ret_ref = LLVMBuildAlloca(builder, LLVMInt32Type(), "ret");
+
+  LLVMBuildStore(builder, LLVMGetParam(func, 0),
+                 var_map[node->func.param->var.name]);
+
+  retBB = LLVMAppendBasicBlock(func, "return");
+  LLVMPositionBuilderAtEnd(builder, retBB);
+
+  LLVMValueRef r = LLVMBuildLoad2(builder, LLVMInt32Type(), ret_ref, "");
+  LLVMBuildRet(builder, r);
+
+  currentBB = entryBB;
+
+  if (node->func.body->stmt.block.stmt_list) {
+    for (astNode *n : *node->func.body->stmt.block.stmt_list) {
+      genIRStmt(&n->stmt);
+    }
+  }
+
+  LLVMValueRef terminator = LLVMGetBasicBlockTerminator(currentBB);
+  if (!terminator) {
+    LLVMPositionBuilderAtEnd(builder, currentBB);
+    LLVMBuildBr(builder, retBB);
+  }
+
+  // remove all BB without pred
 }
