@@ -11,10 +11,10 @@
 std::vector<std::unordered_map<std::string, std::string>> renamings;
 std::unordered_map<std::string, int> var_counter;
 
-LLVMModuleRef module;
-
 std::unordered_set<std::string> var_set;
 std::unordered_map<std::string, LLVMValueRef> var_map;
+
+LLVMModuleRef module;
 
 LLVMValueRef func;
 LLVMValueRef print_func;
@@ -155,21 +155,37 @@ void preprocess(astNode *root) {
   preprocess_walk_nodes(root);
 }
 
+LLVMValueRef genIRExpr(astNode *);
+
 void genIRStmt(astStmt *stmt) {
   if (!stmt)
     return;
 
   switch (stmt->type) {
-  case ast_asgn:
-  
-  break;
+  case ast_asgn: {
+    LLVMPositionBuilderAtEnd(builder, currentBB);
+    LLVMValueRef assign_src = genIRExpr(stmt->asgn.rhs);
+    LLVMValueRef assign_dst = var_map[stmt->asgn.lhs->var.name];
+    LLVMBuildStore(builder, assign_src, assign_dst);
+    break;
+  }
 
-  
+  case ast_call: { // must be print
+    LLVMPositionBuilderAtEnd(builder, currentBB);
+    LLVMValueRef print_args[] = {genIRExpr(stmt->call.param)};
+    LLVMTypeRef print_params[] = {LLVMInt32Type()};
+    LLVMTypeRef print_type = LLVMFunctionType(LLVMVoidType(), print_params, 1, 0);
+    LLVMBuildCall2(builder, print_type, print_func, print_args, 1, "");
+    break;
+  }
+
+  case ast_while:
+    LLVMPositionBuilderAtEnd(builder, currentBB);
+    
   }
 }
 
 LLVMValueRef genIRExpr(astNode *node) {
-  
 }
 
 void build_ir(astNode *root) {
