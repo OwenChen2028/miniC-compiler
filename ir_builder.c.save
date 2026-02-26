@@ -158,7 +158,7 @@ LLVMValueRef genIRExpr(astNode *);
 
 LLVMBasicBlockRef genIRStmt(astStmt *stmt, LLVMBasicBlockRef startBB) {
   if (!stmt)
-    return NULL;
+    return;
 
   switch (stmt->type) {
   case ast_asgn: {
@@ -184,68 +184,40 @@ LLVMBasicBlockRef genIRStmt(astStmt *stmt, LLVMBasicBlockRef startBB) {
     LLVMBuildBr(builder, condBB);
 
     LLVMPositionBuilderAtEnd(builder, condBB);
-    LLVMValueRef condition = genIRExpr(stmt->whilen.cond);
+    LLVMValueRef cmp_instr = genIRExpr(stmt->whilen.cond);
 
     LLVMBasicBlockRef trueBB = LLVMAppendBasicBlock(func, "");
     LLVMBasicBlockRef falseBB = LLVMAppendBasicBlock(func, "");
 
-    LLVMBuildCondBr(builder, condition, trueBB, falseBB);
+    LLVMBuildCondBr(builder, cmp_instr, trueBB, falseBB);
 
-    LLVMBasicBlockRef trueExitBB = genIRStmt(&stmt->whilen.body->stmt, trueBB);
+    LLVMBasicBlockRef trueExitBB = genIRStmt(stmt->whilen.body, trueBB);
 
     LLVMPositionBuilderAtEnd(builder, trueExitBB);
     LLVMBuildBr(builder, condBB);
-
     return falseBB;
   }
 
   case ast_if: {
-    LLVMPositionBuilderAtEnd(builder, startBB);
-    LLVMValueRef condition = genIRExpr(stmt->ifn.cond);
-
-    LLVMBasicBlockRef trueBB = LLVMAppendBasicBlock(func, "");
-    LLVMBasicBlockRef falseBB = LLVMAppendBasicBlock(func, "");
-
-    LLVMBuildCondBr(builder, condition, trueBB, falseBB);
-
-    if (!stmt->ifn.else_body) {
-      LLVMBasicBlockRef ifExitBB = genIRStmt(&stmt->ifn.if_body->stmt, trueBB);
-      LLVMPositionBuilderAtEnd(builder, ifExitBB);
-      LLVMBuildBr(builder, falseBB);
-      return falseBB;
-    } else {
-      LLVMBasicBlockRef ifExitBB = genIRStmt(&stmt->ifn.if_body->stmt, trueBB);
-      LLVMBasicBlockRef elseExitBB =
-          genIRStmt(&stmt->ifn.else_body->stmt, falseBB);
-
-      LLVMBasicBlockRef endBB = LLVMAppendBasicBlock(func, "");
-
-      LLVMPositionBuilderAtEnd(builder, ifExitBB);
-      LLVMBuildBr(builder, endBB);
-
-      LLVMPositionBuilderAtEnd(builder, elseExitBB);
-      LLVMBuildBr(builder, endBB);
-
-      return endBB;
-    }
+    LLVMPositionBuilderAtEnd(builder, currentBB);
+    
+    break;
   }
 
   case ast_ret: {
-    LLVMPositionBuilderAtEnd(builder, startBB);
+    LLVMPositionBuilderAtEnd(builder, currentBB);
     LLVMValueRef ret_val = genIRExpr(stmt->ret.expr);
     LLVMBuildStore(builder, ret_val, ret_ref);
     LLVMBuildBr(builder, retBB);
-    return LLVMAppendBasicBlock(func, "");
+    currentBB = LLVMAppendBasicBlock(func, "");
+    break;
   }
 
   case ast_block:
-    LLVMBasicBlockRef prevBB = startBB;
     for (astNode *n : *stmt->block.stmt_list)
-      prevBB = genIRStmt(&n->stmt, prevBB);
-    return prevBB;
+      genIRStmt(&n->stmt);
+    break;
   }
-
-  return NULL;
 }
 
 LLVMValueRef genIRExpr(astNode *node) {
@@ -336,15 +308,18 @@ void markReachableBB(LLVMBasicBlockRef basicBlock) {
 }
 
 void rmUnreachableBB() {
-  visitedBB.clear();
   markReachableBB(entryBB);
 
-  for (LLVMBasicBlockRef basicBlock = entryBB; basicBlock;) {
+  for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
+       function = LLVMGetNextFunction(function)) {
+    for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+         basicBlock;) {
 
-    LLVMBasicBlockRef nextBB = LLVMGetNextBasicBlock(basicBlock);
-    if (visitedBB.find(basicBlock) == visitedBB.end())
-      LLVMDeleteBasicBlock(basicBlock);
-    basicBlock = nextBB;
+      LLVMBasicBlockRef nextBB = LLVMGetNextBasicBlock(basicBlock);
+      if (visitedBB.find(basicBlock) == visitedBB.end())
+        LLVMDeleteBasicBlock(basicBlock);
+      basicBlock = nextBB;
+    }
   }
 }
 
@@ -399,11 +374,8 @@ void build_ir(astNode *root) {
   LLVMValueRef terminator = LLVMGetBasicBlockTerminator(exitBB);
   if (!terminator) {
     LLVMPositionBuilderAtEnd(builder, exitBB);
-    LLVMBuildStore(builder, LLVMConstInt(LLVMInt32Type(), 0, 0), ret_ref);
     LLVMBuildBr(builder, retBB);
   }
 
   rmUnreachableBB();
-
-  LLVMDisposeBuilder(builder);
 }
