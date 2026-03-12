@@ -1,5 +1,6 @@
 #include "analysis.h"
 #include "ast.h"
+#include "backend.h"
 #include "ir_builder.h"
 #include "optimizer.h"
 #include "y.tab.h"
@@ -36,8 +37,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "LLVM Module is NULL.\n");
         return 1;
       }
-      doOptimizations(module);
-      LLVMDumpModule(module);
+      optimize_ir(module);
+      //LLVMDumpModule(module);
       // TODO: generate assembly
       break;
     case 1:

@@ -2,4 +2,4 @@
 
 #include <llvm-c/Core.h>
 
-void doOptimizations(LLVMModuleRef module);
+void optimize_ir(LLVMModuleRef module);

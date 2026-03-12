@@ -213,6 +213,7 @@ int doConstantPropagation(LLVMModuleRef module) {
         for (LLVMValueRef instr : stores) {
           if (instr == instruction)
             continue;
+
           if (LLVMGetOperand(instr, 1) == LLVMGetOperand(instruction, 1))
             kill[basicBlock].insert(instr);
         }
@@ -330,7 +331,7 @@ int doConstantPropagation(LLVMModuleRef module) {
   return replaces;
 }
 
-void doOptimizations(LLVMModuleRef module) {
+void optimize_ir(LLVMModuleRef module) {
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
        function = LLVMGetNextFunction(function)) {
     for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
