@@ -16,7 +16,7 @@ std::vector<LLVMValueRef> sorted_list;
 
 FILE *out_fp;
 
-int compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
+bool compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
   return live_range[instrA].second > live_range[instrB].second;
 } // decreasing order
 
@@ -68,6 +68,8 @@ LLVMValueRef find_spill(LLVMValueRef instr) {
 }
 
 void alloc_registers(LLVMValueRef function) {
+  reg_map.clear();
+
   for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
        basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
 
@@ -122,7 +124,7 @@ void alloc_registers(LLVMValueRef function) {
           } else {
             LLVMValueRef v = find_spill(instr);
             if (v != NULL) {
-              if (compare_instr(instr, v)) {
+              if (compare_instr(instr, v)) { // reversed bc dec order
                 reg_map[instr] = nullreg;
               } else {
                 reg_map[instr] = reg_map[v];
@@ -199,7 +201,7 @@ void getOffsetMap(LLVMValueRef function) {
         if (operA == param) { // only on the param's initial store
           int x = offset_map[operA];
           offset_map[LLVMGetOperand(instr, 1)] = x;
-        } else if (!LLVMIsAConstant(operA)) {
+        } else if (!LLVMIsAConstantInt(operA)) {
           int x = offset_map[LLVMGetOperand(instr, 1)];
           offset_map[operA] = x;
         }
@@ -253,17 +255,19 @@ void generate_code(LLVMModuleRef module) {
         LLVMOpcode opcode = LLVMGetInstructionOpcode(instr);
         switch (opcode) {
         case LLVMRet: {
-          LLVMValueRef operA = LLVMGetOperand(instr, 0);
-          if (LLVMIsAConstant(operA)) {
-            int valA = (int)LLVMConstIntGetSExtValue(operA);
-            fprintf(out_fp, "movl $%d, %%eax\n", valA);
-          } else {
-            auto reg = reg_map.find(operA);
-            if (reg != reg_map.end()) {
-              if (reg->second == nullreg) {
-                fprintf(out_fp, "movl %d(%%ebp), %%eax\n", offset_map[operA]);
-              } else {
-                fprintf(out_fp, "movl %%%s, %%eax\n", reg_to_str(reg->second));
+          if (LLVMGetNumOperands(instr) > 0) {
+            LLVMValueRef operA = LLVMGetOperand(instr, 0);
+            if (LLVMIsAConstantInt(operA)) {
+              int valA = (int)LLVMConstIntGetSExtValue(operA);
+              fprintf(out_fp, "movl $%d, %%eax\n", valA);
+            } else {
+              auto reg = reg_map.find(operA);
+              if (reg != reg_map.end()) {
+                if (reg->second == nullreg) {
+                  fprintf(out_fp, "movl %d(%%ebp), %%eax\n", offset_map[operA]);
+                } else {
+                  fprintf(out_fp, "movl %%%s, %%eax\n", reg_to_str(reg->second));
+                }
               }
             }
           }
@@ -285,7 +289,7 @@ void generate_code(LLVMModuleRef module) {
           LLVMValueRef operA = LLVMGetOperand(instr, 0);
           if (LLVMCountParams(function) > 0 && operA == LLVMGetParam(function, 0))
             break;
-          if (LLVMIsAConstant(operA)) {
+          if (LLVMIsAConstantInt(operA)) {
             int c = offset_map[LLVMGetOperand(instr, 1)];
             int valA = (int)LLVMConstIntGetSExtValue(operA);
             fprintf(out_fp, "movl $%d, %d(%%ebp)\n", valA, c);
@@ -310,9 +314,9 @@ void generate_code(LLVMModuleRef module) {
 
           LLVMValueRef func = LLVMGetCalledValue(instr);
 
-          if (LLVMCountParams(func) > 0) {
-            LLVMValueRef p = LLVMGetParam(func, 1);
-            if (LLVMIsAConstant(p)) {
+          if (LLVMGetNumOperands(instr) >= 2) { // called func has param
+            LLVMValueRef p = LLVMGetOperand(instr, 1);
+            if (LLVMIsAConstantInt(p)) {
               int valP = (int)LLVMConstIntGetSExtValue(p);
               fprintf(out_fp, "pushl $%d\n", valP);
             }
@@ -327,13 +331,13 @@ void generate_code(LLVMModuleRef module) {
 
           fprintf(out_fp, "call %s\n", LLVMGetValueName(func));
 
-          if (LLVMCountParams(func) > 0)
+          if (LLVMGetNumOperands(instr) >= 2) // has param
             fprintf(out_fp, "addl $4, %%esp\n");
 
           fprintf(out_fp, "popl %%edx\n");
           fprintf(out_fp, "popl %%ecx\n");
 
-          if (LLVMGetTypeKind(LLVMTypeOf(instr)) == LLVMVoidTypeKind) {
+          if (LLVMGetTypeKind(LLVMTypeOf(instr)) != LLVMVoidTypeKind) {
             auto reg = reg_map.find(instr);
             if (reg != reg_map.end() && reg->second != nullreg)
               fprintf(out_fp, "movl %%eax, %%%s\n", reg_to_str(reg->second));
