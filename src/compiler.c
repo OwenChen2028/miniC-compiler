@@ -22,14 +22,16 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Error: failed to open input.\n");
       return 1;
     }
+  }
 
-    if (argc >= 3) {
-      out_fp = fopen(argv[2], "w");
-      if (out_fp == NULL) {
-        fprintf(stderr, "Error: failed to open output.\n");
-        return 1;
-      }
+  if (argc >= 3) {
+    out_fp = fopen(argv[2], "w");
+    if (out_fp == NULL) {
+      fprintf(stderr, "Error: failed to open output.\n");
+      return 1;
     }
+  } else {
+    out_fp = stdout;
   }
 
   if (yyparse() == 0) {
