@@ -9,23 +9,32 @@
 
 extern astNode *root;
 extern LLVMModuleRef module;
+extern FILE *out_fp;
 
 extern FILE *yyin;
 extern void yylex_destroy();
 
 int main(int argc, char *argv[]) {
-  if (argc == 2) {
+  if (argc >= 2) {
     yyin = fopen(argv[1], "r");
 
     if (yyin == NULL) {
-      fprintf(stderr, "Error opening file.\n");
+      fprintf(stderr, "Error: failed to open input.\n");
       return 1;
+    }
+
+    if (argc >= 3) {
+      out_fp = fopen(argv[2], "w");
+      if (out_fp == NULL) {
+        fprintf(stderr, "Error: failed to open output.\n");
+        return 1;
+      }
     }
   }
 
   if (yyparse() == 0) {
     if (!root) {
-      fprintf(stderr, "AST root is NULL.\n");
+      fprintf(stderr, "Error: AST root is NULL.\n");
       return 1;
     }
 
@@ -34,12 +43,12 @@ int main(int argc, char *argv[]) {
       //printNode(root);
       build_ir(root);
       if (!module) {
-        fprintf(stderr, "LLVM Module is NULL.\n");
+        fprintf(stderr, "Error: LLVM Module is NULL.\n");
         return 1;
       }
-      LLVMDumpModule(module);
+      //LLVMDumpModule(module);
       optimize_ir(module);
-      LLVMDumpModule(module);
+      //LLVMDumpModule(module);
       generate_code(module);
       break;
     case 1:

@@ -1,3 +1,5 @@
+# MiniC Compiler
+
 ## Build
 
 To build the compiler, run:
@@ -6,15 +8,11 @@ To build the compiler, run:
 make compiler
 ```
 
-This creates the executable `compiler.out`.
-
 ## Usage
 
 ```
-./compiler.out <filename>
+./compiler.out <input> <output>
 ```
-
-Provide one argument: the source file you want to compile.
 
 ## Status
 

@@ -1,5 +1,6 @@
 #include "backend.h"
 #include <algorithm>
+#include <cstdio>
 #include <llvm-c/Core.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -11,6 +12,8 @@ std::unordered_map<LLVMValueRef, int> inst_index;
 std::unordered_map<LLVMValueRef, std::pair<int, int>> live_range;
 
 std::vector<LLVMValueRef> sorted_list;
+
+FILE *out_fp;
 
 int compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
   return live_range[instrA].second > live_range[instrB].second;
