@@ -1,16 +1,25 @@
 #include "backend.h"
+#include <algorithm>
 #include <llvm-c/Core.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 std::unordered_map<LLVMValueRef, Register> reg_map;
 
 std::unordered_map<LLVMValueRef, int> inst_index;
 std::unordered_map<LLVMValueRef, std::pair<int, int>> live_range;
 
+std::vector<LLVMValueRef> sorted_list;
+
+int compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
+  return live_range[instrA].second > live_range[instrB].second;
+} // decreasing order
+
 void compute_liveness(LLVMBasicBlockRef bb) {
   inst_index.clear();
   live_range.clear();
+  sorted_list.clear();
 
   int idx = 0;
   for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
@@ -21,6 +30,7 @@ void compute_liveness(LLVMBasicBlockRef bb) {
 
     inst_index[instruction] = idx;
     live_range[instruction] = std::make_pair(idx, idx);
+    sorted_list.push_back(instruction);
 
     ++idx;
   }
@@ -33,16 +43,26 @@ void compute_liveness(LLVMBasicBlockRef bb) {
 
     for (int i = 0; i < LLVMGetNumOperands(instruction); ++i) {
       LLVMValueRef oper = LLVMGetOperand(instruction, i);
-      live_range[oper] = std::make_pair(inst_index[oper], inst_index[instruction]);
+      auto first = inst_index.find(oper);
+      if (first != inst_index.end())
+        live_range[oper] = std::make_pair(first->second, inst_index[instruction]);
     }
   }
+
+  std::sort(sorted_list.begin(), sorted_list.end(), compare_instr);
 }
 
-int compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
-  return live_range[instrA].second < live_range[instrB].second;
+LLVMValueRef find_spill(LLVMValueRef instr) {
+  for (LLVMValueRef v : sorted_list) {
+    if (live_range[v].first <= live_range[instr].second &&
+        live_range[instr].first <= live_range[v].second) {
+      auto reg = reg_map.find(v);
+      if (reg != reg_map.end() && reg->second != nullreg)
+        return v;
+    }
+  }
+  return NULL;
 }
-
-LLVMValueRef find_spill(LLVMValueRef instr) {}
 
 void alloc_registers(LLVMModuleRef module) {
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
@@ -59,12 +79,14 @@ void alloc_registers(LLVMModuleRef module) {
         if (LLVMIsAAllocaInst(instr))
           continue;
 
-        if (LLVMIsACallInst(instr) || LLVMIsAStoreInst(instr) ||
-            LLVMIsATerminatorInst(instr)) {
+        if ((LLVMIsACallInst(instr) &&
+            LLVMGetTypeKind(LLVMTypeOf(instr)) == LLVMVoidTypeKind) ||
+            LLVMIsAStoreInst(instr) || LLVMIsATerminatorInst(instr)) {
 
           for (int i = 0; i < LLVMGetNumOperands(instr); ++i) {
             LLVMValueRef oper = LLVMGetOperand(instr, i);
-            if (live_range[oper].second == inst_index[instr]) {
+            if (live_range.count(oper) &&
+                live_range[oper].second == inst_index[instr]) {
               auto reg = reg_map.find(oper);
               if (reg != reg_map.end() && reg->second != nullreg)
                 available.insert(reg->second);
@@ -74,22 +96,24 @@ void alloc_registers(LLVMModuleRef module) {
           LLVMOpcode op = LLVMGetInstructionOpcode(instr);
           if (op == LLVMAdd || op == LLVMSub || op == LLVMMul) {
             LLVMValueRef operA = LLVMGetOperand(instr, 0);
-            if (live_range[operA].second == inst_index[instr]) {
+            if (live_range.count(operA) &&
+                live_range[operA].second == inst_index[instr]) {
               auto regA = reg_map.find(operA);
               if (regA != reg_map.end() && regA->second != nullreg) {
                 reg_map[instr] = regA->second;
 
                 LLVMValueRef operB = LLVMGetOperand(instr, 1);
-                if (live_range[operB].second == inst_index[instr]) {
+                if (live_range.count(operB) &&
+                    live_range[operB].second == inst_index[instr]) {
                   auto regB = reg_map.find(operB);
                   if (regB != reg_map.end() && regB->second != nullreg)
                     available.insert(regB->second);
                 } // only if instr has been assigned a register
               }
-            }
+            } // if can't reuse operA, fall through to next case
           }
 
-          if (reg_map.find(instr) == reg_map.end()) { // still not assigned
+          if (reg_map.find(instr) == reg_map.end()) {
             if (!available.empty()) {
               auto reg = available.begin();
               reg_map[instr] = *reg;
@@ -97,7 +121,7 @@ void alloc_registers(LLVMModuleRef module) {
             } else {
               LLVMValueRef v = find_spill(instr);
               if (v != NULL) {
-                if (compare_instr(v, instr)) {
+                if (compare_instr(instr, v)) {
                   reg_map[instr] = nullreg;
                 } else {
                   reg_map[instr] = reg_map[v];
@@ -110,7 +134,8 @@ void alloc_registers(LLVMModuleRef module) {
 
             for (int i = 0; i < LLVMGetNumOperands(instr); ++i) {
               LLVMValueRef oper = LLVMGetOperand(instr, i);
-              if (live_range[oper].second == inst_index[instr]) {
+              if (live_range.count(oper) &&
+                 live_range[oper].second == inst_index[instr]) {
                 auto reg = reg_map.find(oper);
                 if (reg != reg_map.end() && reg->second != nullreg)
                   available.insert(reg->second);
