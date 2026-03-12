@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
         return 1;
       }
       optimize_ir(module);
-      //LLVMDumpModule(module);
-      // TODO: generate assembly
+      LLVMDumpModule(module);
+      generate_code(module);
       break;
     case 1:
       printf("Variable used before declaration.\n");

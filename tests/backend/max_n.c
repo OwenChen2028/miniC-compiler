@@ -2,9 +2,10 @@ extern void print(int);
 extern int read();
 
 int func(int n){
-	int max = 0;
+	int max;
 	int i;
 	int a;
+	max = 0;
 	i = 0;
 	
 	while (i < n){ 

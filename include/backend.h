@@ -10,4 +10,4 @@ enum Register {
   nullreg
 };
 
-extern std::unordered_map<LLVMValueRef, Register> reg_map;
+void generate_code(LLVMModuleRef module);
