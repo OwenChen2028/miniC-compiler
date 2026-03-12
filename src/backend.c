@@ -148,29 +148,6 @@ void alloc_registers(LLVMModuleRef module) {
   }
 }
 
-#include <iostream>
-
 void generate_code(LLVMModuleRef module) {
   alloc_registers(module);
-
-  for (auto &p : reg_map) {
-    LLVMValueRef instr = p.first;
-    Register r = p.second;
-
-    char *s = LLVMPrintValueToString(instr);
-
-    std::cout << s << " -> ";
-    if (r == nullreg)
-      std::cout << "SPILL";
-    else if (r == ebx)
-      std::cout << "ebx";
-    else if (r == ecx)
-      std::cout << "ecx";
-    else if (r == edx)
-      std::cout << "edx";
-
-    std::cout << std::endl;
-
-    LLVMDisposeMessage(s);
-  }
 }

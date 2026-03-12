@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "LLVM Module is NULL.\n");
         return 1;
       }
+      LLVMDumpModule(module);
       optimize_ir(module);
       LLVMDumpModule(module);
       generate_code(module);
