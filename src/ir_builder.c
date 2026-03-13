@@ -44,8 +44,8 @@ void preprocess_walk_nodes(astNode *node) {
     renamings.emplace_back(std::unordered_map<std::string, std::string>());
     if (node->func.param) {
       std::string orig_name = node->func.param->var.name;
-      node->func.param->var.name = strdup((orig_name + "." +
-                                          std::to_string(var_counter[orig_name])).c_str());
+      node->func.param->var.name = strdup(
+          (orig_name + "." + std::to_string(var_counter[orig_name])).c_str());
       renamings.back()[orig_name] = node->func.param->var.name;
       ++var_counter[orig_name];
       var_set.insert(node->func.param->var.name);
@@ -136,8 +136,8 @@ void preprocess_walk_stmt(astStmt *stmt) {
 
   case ast_decl: {
     std::string orig_name = stmt->decl.name;
-    stmt->decl.name = strdup((orig_name + "." +
-                              std::to_string(var_counter[orig_name])).c_str());
+    stmt->decl.name = strdup(
+        (orig_name + "." + std::to_string(var_counter[orig_name])).c_str());
     renamings.back()[orig_name] = stmt->decl.name;
     ++var_counter[orig_name];
     var_set.insert(stmt->decl.name);
@@ -215,7 +215,8 @@ LLVMBasicBlockRef genIRStmt(astStmt *stmt, LLVMBasicBlockRef startBB) {
       return falseBB;
     } else {
       LLVMBasicBlockRef ifExitBB = genIRStmt(&stmt->ifn.if_body->stmt, trueBB);
-      LLVMBasicBlockRef elseExitBB = genIRStmt(&stmt->ifn.else_body->stmt, falseBB);
+      LLVMBasicBlockRef elseExitBB =
+          genIRStmt(&stmt->ifn.else_body->stmt, falseBB);
 
       LLVMBasicBlockRef endBB = LLVMAppendBasicBlock(func, "");
 
@@ -367,9 +368,9 @@ void build_ir(astNode *root) {
   astNode *node = root->prog.func;
 
   LLVMTypeRef func_params[] = {LLVMInt32Type()};
-  LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(),
-                                           node->func.param ? func_params : NULL,
-                                           node->func.param ? 1 : 0, 0);
+  LLVMTypeRef func_type =
+      LLVMFunctionType(LLVMInt32Type(), node->func.param ? func_params : NULL,
+                       node->func.param ? 1 : 0, 0);
   func = LLVMAddFunction(module, node->func.name, func_type);
 
   builder = LLVMCreateBuilder();
@@ -379,7 +380,8 @@ void build_ir(astNode *root) {
 
   var_map.clear();
   for (std::string var_name : var_set) { // includes func param
-    LLVMValueRef alloc_stmt = LLVMBuildAlloca(builder, LLVMInt32Type(), var_name.c_str());
+    LLVMValueRef alloc_stmt =
+        LLVMBuildAlloca(builder, LLVMInt32Type(), var_name.c_str());
     var_map[var_name] = alloc_stmt;
   }
 
@@ -387,7 +389,8 @@ void build_ir(astNode *root) {
   ret_ref = LLVMBuildAlloca(builder, LLVMInt32Type(), "ret");
 
   if (node->func.param)
-    LLVMBuildStore(builder, LLVMGetParam(func, 0), var_map[node->func.param->var.name]);
+    LLVMBuildStore(builder, LLVMGetParam(func, 0),
+                   var_map[node->func.param->var.name]);
 
   retBB = LLVMAppendBasicBlock(func, "return");
   LLVMPositionBuilderAtEnd(builder, retBB);

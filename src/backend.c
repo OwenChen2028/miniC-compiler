@@ -50,7 +50,8 @@ void compute_liveness(LLVMBasicBlockRef bb) {
       LLVMValueRef oper = LLVMGetOperand(instruction, i);
       auto first = inst_index.find(oper);
       if (first != inst_index.end())
-        live_range[oper] = std::make_pair(first->second, inst_index.at(instruction));
+        live_range[oper] =
+            std::make_pair(first->second, inst_index.at(instruction));
     }
   }
 
@@ -61,9 +62,9 @@ LLVMValueRef find_spill(LLVMValueRef instr) {
   for (LLVMValueRef v : sorted_list) {
     if (live_range.at(v).first <= live_range.at(instr).second &&
         live_range.at(instr).first <= live_range.at(v).second) {
-     auto reg = reg_map.find(v);
-     if (reg != reg_map.end() && reg->second != nullreg)
-       return v;
+      auto reg = reg_map.find(v);
+      if (reg != reg_map.end() && reg->second != nullreg)
+        return v;
     }
   }
   return NULL;
@@ -269,9 +270,11 @@ void generate_code(LLVMModuleRef module) {
               auto reg = reg_map.find(operA);
               assert(reg != reg_map.end());
               if (reg->second == nullreg)
-                fprintf(out_fp, "\tmovl %d(%%ebp), %%eax\n", offset_map.at(operA));
+                fprintf(out_fp, "\tmovl %d(%%ebp), %%eax\n",
+                        offset_map.at(operA));
               else
-                fprintf(out_fp, "\tmovl %%%s, %%eax\n", reg_to_str(reg->second));
+                fprintf(out_fp, "\tmovl %%%s, %%eax\n",
+                        reg_to_str(reg->second));
             }
           }
           fprintf(out_fp, "\tpopl %%ebx\n");
@@ -284,7 +287,8 @@ void generate_code(LLVMModuleRef module) {
           assert(reg != reg_map.end());
           if (reg->second != nullreg) {
             int c = offset_map.at(LLVMGetOperand(instr, 0));
-            fprintf(out_fp, "\tmovl %d(%%ebp), %%%s\n", c, reg_to_str(reg->second));
+            fprintf(out_fp, "\tmovl %d(%%ebp), %%%s\n", c,
+                    reg_to_str(reg->second));
           }
           break;
         }
@@ -303,7 +307,8 @@ void generate_code(LLVMModuleRef module) {
             assert(reg != reg_map.end());
             if (reg->second != nullreg) {
               int c = offset_map.at(LLVMGetOperand(instr, 1));
-              fprintf(out_fp, "\tmovl %%%s, %d(%%ebp)\n", reg_to_str(reg->second), c);
+              fprintf(out_fp, "\tmovl %%%s, %d(%%ebp)\n",
+                      reg_to_str(reg->second), c);
             } else {
               int c1 = offset_map.at(operA);
               fprintf(out_fp, "\tmovl %d(%%ebp), %%eax\n", c1);
@@ -349,7 +354,8 @@ void generate_code(LLVMModuleRef module) {
             if (reg->second != nullreg)
               fprintf(out_fp, "\tmovl %%eax, %%%s\n", reg_to_str(reg->second));
             else
-              fprintf(out_fp, "\tmovl %%eax, %d(%%ebp)\n", offset_map.at(instr));
+              fprintf(out_fp, "\tmovl %%eax, %d(%%ebp)\n",
+                      offset_map.at(instr));
           }
           break;
         }
@@ -434,7 +440,8 @@ void generate_code(LLVMModuleRef module) {
           LLVMValueRef operB = LLVMGetOperand(instr, 1);
           if (LLVMIsAConstantInt(operB)) {
             int valB = (int)LLVMConstIntGetSExtValue(operB);
-            fprintf(out_fp, "\t%s $%d, %%%s\n", opl.c_str(), valB, reg_to_str(r));
+            fprintf(out_fp, "\t%s $%d, %%%s\n", opl.c_str(), valB,
+                    reg_to_str(r));
           } else {
             auto regB = reg_map.find(operB);
             assert(regB != reg_map.end());
@@ -484,11 +491,11 @@ void generate_code(LLVMModuleRef module) {
             auto regB = reg_map.find(operB);
             assert(regB != reg_map.end());
             if (regB->second != nullreg) {
-              fprintf(out_fp, "\tcmpl %%%s, %%%s\n",
-                      reg_to_str(regB->second), reg_to_str(r));
+              fprintf(out_fp, "\tcmpl %%%s, %%%s\n", reg_to_str(regB->second),
+                      reg_to_str(r));
             } else {
-              fprintf(out_fp, "\tcmpl %d(%%ebp), %%%s\n",
-                      offset_map.at(operB), reg_to_str(r));
+              fprintf(out_fp, "\tcmpl %d(%%ebp), %%%s\n", offset_map.at(operB),
+                      reg_to_str(r));
             }
           }
 
