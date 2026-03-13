@@ -364,7 +364,7 @@ void generate_code(LLVMModuleRef module) {
           if (LLVMGetNumOperands(instr) == 1) { // unconditional
             LLVMBasicBlockRef l = LLVMGetSuccessor(instr, 0);
             fprintf(out_fp, "\tjmp %s\n", label_map.at(l).c_str());
-          } else { // conditional
+          } else {
             LLVMBasicBlockRef l1 = LLVMGetSuccessor(instr, 0);
             LLVMBasicBlockRef l2 = LLVMGetSuccessor(instr, 1);
 
