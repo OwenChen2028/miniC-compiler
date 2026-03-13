@@ -1,5 +1,6 @@
 #include "backend.h"
 #include <algorithm>
+#include <cassert>
 #include <cstdio>
 #include <llvm-c/Core.h>
 #include <string>
@@ -17,7 +18,7 @@ std::vector<LLVMValueRef> sorted_list;
 FILE *out_fp;
 
 bool compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
-  return live_range[instrA].second > live_range[instrB].second;
+  return live_range.at(instrA).second > live_range.at(instrB).second;
 } // decreasing order
 
 void compute_liveness(LLVMBasicBlockRef bb) {
@@ -49,7 +50,7 @@ void compute_liveness(LLVMBasicBlockRef bb) {
       LLVMValueRef oper = LLVMGetOperand(instruction, i);
       auto first = inst_index.find(oper);
       if (first != inst_index.end())
-        live_range[oper] = std::make_pair(first->second, inst_index[instruction]);
+        live_range[oper] = std::make_pair(first->second, inst_index.at(instruction));
     }
   }
 
@@ -224,6 +225,7 @@ const char *reg_to_str(Register reg) {
   case edx:
     return "edx";
   default:
+    assert(false);
     return NULL;
   }
 }
