@@ -59,10 +59,11 @@ void compute_liveness(LLVMBasicBlockRef bb) {
 
 LLVMValueRef find_spill(LLVMValueRef instr) {
   for (LLVMValueRef v : sorted_list) {
-    if (live_range[v].first <= live_range[instr].second &&
-        live_range[instr].first <= live_range[v].second) {
-      if (reg_map.count(v) && reg_map.at(v) != nullreg)
-        return v;
+    if (live_range.at(v).first <= live_range.at(instr).second &&
+        live_range.at(instr).first <= live_range.at(v).second) {
+     auto reg = reg_map.find(v);
+     if (reg != reg_map.end() && reg->second != nullreg)
+       return v;
     }
   }
   return NULL;
