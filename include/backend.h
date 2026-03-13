@@ -1,15 +1,9 @@
 #pragma once
 
-#include <llvm-c/Core.h>
 #include <cstdio>
+#include <llvm-c/Core.h>
 
-enum Register {
-  eax,
-  ebx,
-  ecx,
-  edx,
-  nullreg
-};
+enum Register { eax, ebx, ecx, edx, nullreg };
 
 extern FILE *out_fp;
 

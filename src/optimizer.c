@@ -107,7 +107,8 @@ void doDeadCodeElim(LLVMBasicBlockRef bb) {
       LLVMValueRef nextInstr = LLVMGetNextInstruction(instruction);
 
       if (LLVMIsACallInst(instruction) || LLVMIsAStoreInst(instruction) ||
-          LLVMIsATerminatorInst(instruction) || LLVMIsAAllocaInst(instruction)) {
+          LLVMIsATerminatorInst(instruction) ||
+          LLVMIsAAllocaInst(instruction)) {
         instruction = nextInstr;
         continue;
       }
@@ -224,7 +225,8 @@ int doConstantPropagation(LLVMModuleRef module) {
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> in;
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> out;
 
-  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMBasicBlockRef>> preds;
+  std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMBasicBlockRef>>
+      preds;
 
   for (LLVMValueRef function = LLVMGetFirstFunction(module); function;
        function = LLVMGetNextFunction(function)) {

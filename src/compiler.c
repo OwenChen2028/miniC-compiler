@@ -44,15 +44,15 @@ int main(int argc, char *argv[]) {
 
     switch (semantic_analysis(root)) {
     case 0:
-      //printNode(root);
+      // printNode(root);
       build_ir(root);
       if (!module) {
         fprintf(stderr, "Error: LLVM Module is NULL.\n");
         return 1;
       }
-      //LLVMDumpModule(module);
+      // LLVMDumpModule(module);
       optimize_ir(module);
-      //LLVMDumpModule(module);
+      // LLVMDumpModule(module);
       generate_code(module);
       break;
     case 1:
