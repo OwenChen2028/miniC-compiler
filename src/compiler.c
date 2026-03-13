@@ -6,6 +6,8 @@
 #include "y.tab.h"
 #include <cstdio>
 #include <llvm-c/Core.h>
+#include <llvm-c/IRReader.h>
+#include <llvm-c/Support.h>
 
 extern astNode *root;
 extern LLVMModuleRef module;

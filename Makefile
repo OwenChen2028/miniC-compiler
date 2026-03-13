@@ -12,3 +12,4 @@ compiler:
 clean:
 	rm -rf gen
 	rm -f *.out
+	rm -f *.s

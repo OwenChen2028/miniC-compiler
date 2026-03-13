@@ -246,7 +246,7 @@ void generate_code(LLVMModuleRef module) {
 
     fprintf(out_fp, "\tpushl %%ebp\n");
     fprintf(out_fp, "\tmovl %%esp, %%ebp\n");
-    fprintf(out_fp, "\tsubl %d, %%esp\n", localMem);
+    fprintf(out_fp, "\tsubl $%d, %%esp\n", localMem);
     fprintf(out_fp, "\tpushl %%ebx\n");
 
     for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
