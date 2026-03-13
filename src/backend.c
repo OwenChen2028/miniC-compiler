@@ -215,6 +215,8 @@ void getOffsetMap(LLVMValueRef function) {
 
 const char *reg_to_str(Register reg) {
   switch (reg) {
+  case eax:
+    return "eax";
   case ebx:
     return "ebx";
   case ecx:
@@ -222,7 +224,7 @@ const char *reg_to_str(Register reg) {
   case edx:
     return "edx";
   default:
-    return "null";
+    return NULL;
   }
 }
 
@@ -436,13 +438,51 @@ void generate_code(LLVMModuleRef module) {
                       offset_map[operB], reg_to_str(r));
           }
 
-          if (spill_flag) // instr in memory
+          if (spill_flag)
             fprintf(out_fp, "movl %%eax, %d(%%ebp)\n", offset_map[instr]);
+
           break;
         }
 
-        case LLVMICmp:
+        case LLVMICmp: {
+          Register r = eax;
+          auto reg = reg_map.find(instr);
+          if (reg != reg_map.end() && reg->second != nullreg)
+            r = reg->second;
+
+          LLVMValueRef operA = LLVMGetOperand(instr, 0);
+          if (LLVMIsAConstantInt(operA)) {
+            int valA = (int)LLVMConstIntGetSExtValue(operA);
+            fprintf(out_fp, "movl $%d, %%%s\n", valA, reg_to_str(r));
+          } else {
+            auto regA = reg_map.find(operA);
+            if (regA != reg_map.end() && regA->second != nullreg) {
+              if (regA->second != r)
+                fprintf(out_fp, "movl %%%s, %%%s\n", reg_to_str(regA->second),
+                        reg_to_str(r));
+            } else {
+              fprintf(out_fp, "movl %d(%%ebp), %%%s\n", offset_map[operA],
+                      reg_to_str(r));
+            }
+          }
+
+          LLVMValueRef operB = LLVMGetOperand(instr, 1);
+          if (LLVMIsAConstantInt(operB)) {
+            int valB = (int)LLVMConstIntGetSExtValue(operB);
+            fprintf(out_fp, "cmpl $%d, %%%s\n", valB, reg_to_str(r));
+          } else {
+            auto regB = reg_map.find(operB);
+            if (regB != reg_map.end() && regB->second != nullreg) {
+              fprintf(out_fp, "cmpl %%%s, %%%s\n",
+                      reg_to_str(regB->second), reg_to_str(r));
+            } else {
+              fprintf(out_fp, "cmpl %d(%%ebp), %%%s\n",
+                      offset_map[operB], reg_to_str(r));
+            }
+          }
+
           break;
+        }
         }
       }
     }
