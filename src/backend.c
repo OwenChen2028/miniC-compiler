@@ -191,7 +191,7 @@ void getOffsetMap(LLVMValueRef function) {
   for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
        basicBlock; basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
     for (LLVMValueRef instr = LLVMGetFirstInstruction(basicBlock); instr;
-       instr = LLVMGetNextInstruction(instr)) {
+         instr = LLVMGetNextInstruction(instr)) {
 
       if (LLVMIsAAllocaInst(instr)) {
         localMem += 4;
@@ -287,7 +287,8 @@ void generate_code(LLVMModuleRef module) {
 
         case LLVMStore: {
           LLVMValueRef operA = LLVMGetOperand(instr, 0);
-          if (LLVMCountParams(function) > 0 && operA == LLVMGetParam(function, 0))
+          if (LLVMCountParams(function) > 0 &&
+              operA == LLVMGetParam(function, 0))
             break;
           if (LLVMIsAConstantInt(operA)) {
             int c = offset_map[LLVMGetOperand(instr, 1)];
@@ -319,8 +320,7 @@ void generate_code(LLVMModuleRef module) {
             if (LLVMIsAConstantInt(p)) {
               int valP = (int)LLVMConstIntGetSExtValue(p);
               fprintf(out_fp, "pushl $%d\n", valP);
-            }
-            else {
+            } else {
               auto reg = reg_map.find(p);
               if (reg != reg_map.end() && reg->second != nullreg)
                 fprintf(out_fp, "pushl %%%s\n", reg_to_str(reg->second));
@@ -348,12 +348,98 @@ void generate_code(LLVMModuleRef module) {
         }
 
         case LLVMBr:
+          if (LLVMGetNumOperands(instr) == 1) { // unconditional
+            LLVMBasicBlockRef l = LLVMGetSuccessor(instr, 0);
+            fprintf(out_fp, "jmp %s\n", label_map[l].c_str());
+          } else { // conditional
+            LLVMBasicBlockRef l1 = LLVMGetSuccessor(instr, 0);
+            LLVMBasicBlockRef l2 = LLVMGetSuccessor(instr, 1);
+
+            LLVMValueRef oper = LLVMGetOperand(instr, 0);
+            LLVMIntPredicate t = LLVMGetICmpPredicate(oper);
+            switch (t) {
+            case LLVMIntEQ:
+              fprintf(out_fp, "je %s\n", label_map[l1].c_str());
+              break;
+            case LLVMIntNE:
+              fprintf(out_fp, "jne %s\n", label_map[l1].c_str());
+              break;
+            case LLVMIntSLT:
+              fprintf(out_fp, "jl %s\n", label_map[l1].c_str());
+              break;
+            case LLVMIntSLE:
+              fprintf(out_fp, "jle %s\n", label_map[l1].c_str());
+              break;
+            case LLVMIntSGT:
+              fprintf(out_fp, "jg %s\n", label_map[l1].c_str());
+              break;
+            case LLVMIntSGE:
+              fprintf(out_fp, "jge %s\n", label_map[l1].c_str());
+              break;
+            }
+
+            fprintf(out_fp, "jmp %s\n", label_map[l2].c_str());
+          }
           break;
 
         case LLVMAdd:
         case LLVMSub:
-        case LLVMMul:
+        case LLVMMul: {
+          Register r = eax;
+          int spill_flag = 0;
+          auto reg = reg_map.find(instr);
+          if (reg != reg_map.end() && reg->second != nullreg)
+            r = reg->second;
+          else
+            spill_flag = 1;
+
+          LLVMValueRef operA = LLVMGetOperand(instr, 0);
+          if (LLVMIsAConstantInt(operA)) {
+            int valA = (int)LLVMConstIntGetSExtValue(operA);
+            fprintf(out_fp, "movl $%d, %%%s\n", valA, reg_to_str(r));
+          } else {
+            auto regA = reg_map.find(operA);
+            if (regA != reg_map.end() && regA->second != nullreg) {
+              if (regA->second != r)
+                fprintf(out_fp, "movl %%%s, %%%s\n", reg_to_str(regA->second),
+                        reg_to_str(r));
+            } else {
+              fprintf(out_fp, "movl %d(%%ebp), %%%s\n", offset_map[operA],
+                      reg_to_str(r));
+            }
+          }
+
+          std::string opl;
+          switch (opcode) {
+          case LLVMAdd:
+            opl = "addl";
+            break;
+          case LLVMSub:
+            opl = "subl";
+            break;
+          case LLVMMul:
+            opl = "imull";
+            break;
+          }
+
+          LLVMValueRef operB = LLVMGetOperand(instr, 1);
+          if (LLVMIsAConstantInt(operB)) {
+            int valB = (int)LLVMConstIntGetSExtValue(operB);
+            fprintf(out_fp, "%s $%d, %%%s\n", opl.c_str(), valB, reg_to_str(r));
+          } else {
+            auto regB = reg_map.find(operB);
+            if (regB != reg_map.end() && regB->second != nullreg)
+              fprintf(out_fp, "%s %%%s, %%%s\n", opl.c_str(),
+                      reg_to_str(regB->second), reg_to_str(r));
+            else
+              fprintf(out_fp, "%s %d(%%ebp), %%%s\n", opl.c_str(),
+                      offset_map[operB], reg_to_str(r));
+          }
+
+          if (spill_flag) // instr in memory
+            fprintf(out_fp, "movl %%eax, %d(%%ebp)\n", offset_map[instr]);
           break;
+        }
 
         case LLVMICmp:
           break;

@@ -4,6 +4,7 @@
 #include <cstdio>
 
 enum Register {
+  eax,
   ebx,
   ecx,
   edx,
