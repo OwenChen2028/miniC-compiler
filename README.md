@@ -13,10 +13,3 @@ make compiler
 ```
 ./compiler.out <input> <output>
 ```
-
-## Status
-
-* Parser: implemented
-* Optimizer: implemented
-* IR Builder: implemented
-* Assembly Generator: TODO

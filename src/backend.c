@@ -61,7 +61,7 @@ LLVMValueRef find_spill(LLVMValueRef instr) {
   for (LLVMValueRef v : sorted_list) {
     if (live_range[v].first <= live_range[instr].second &&
         live_range[instr].first <= live_range[v].second) {
-      if (reg_map.count(v) && reg_map[v] != nullreg)
+      if (reg_map.count(v) && reg_map.at(v) != nullreg)
         return v;
     }
   }
@@ -101,14 +101,14 @@ void alloc_registers(LLVMValueRef function) {
         if (op == LLVMAdd || op == LLVMSub || op == LLVMMul) {
           LLVMValueRef operA = LLVMGetOperand(instr, 0);
           if (live_range.count(operA) &&
-              live_range[operA].second == inst_index[instr]) {
+              live_range.at(operA).second == inst_index.at(instr)) {
             auto regA = reg_map.find(operA);
             if (regA != reg_map.end() && regA->second != nullreg) {
               reg_map[instr] = regA->second;
 
               LLVMValueRef operB = LLVMGetOperand(instr, 1);
               if (live_range.count(operB) &&
-                  live_range[operB].second == inst_index[instr]) {
+                  live_range.at(operB).second == inst_index.at(instr)) {
                 auto regB = reg_map.find(operB);
                 if (regB != reg_map.end() && regB->second != nullreg)
                   available.insert(regB->second);
@@ -128,7 +128,7 @@ void alloc_registers(LLVMValueRef function) {
               if (compare_instr(instr, v)) { // reversed bc dec order
                 reg_map[instr] = nullreg;
               } else {
-                reg_map[instr] = reg_map[v];
+                reg_map[instr] = reg_map.at(v);
                 reg_map[v] = nullreg;
               }
             } else {
@@ -139,7 +139,7 @@ void alloc_registers(LLVMValueRef function) {
           for (int i = 0; i < LLVMGetNumOperands(instr); ++i) {
             LLVMValueRef oper = LLVMGetOperand(instr, i);
             if (live_range.count(oper) &&
-                live_range[oper].second == inst_index[instr]) {
+                live_range.at(oper).second == inst_index.at(instr)) {
               auto reg = reg_map.find(oper);
               if (reg != reg_map.end() && reg->second != nullreg)
                 available.insert(reg->second);
@@ -266,13 +266,11 @@ void generate_code(LLVMModuleRef module) {
               fprintf(out_fp, "\tmovl $%d, %%eax\n", valA);
             } else {
               auto reg = reg_map.find(operA);
-              if (reg != reg_map.end()) {
-                if (reg->second == nullreg) {
-                  fprintf(out_fp, "\tmovl %d(%%ebp), %%eax\n", offset_map.at(operA));
-                } else {
-                  fprintf(out_fp, "\tmovl %%%s, %%eax\n", reg_to_str(reg->second));
-                }
-              }
+              assert(reg != reg_map.end());
+              if (reg->second == nullreg)
+                fprintf(out_fp, "\tmovl %d(%%ebp), %%eax\n", offset_map.at(operA));
+              else
+                fprintf(out_fp, "\tmovl %%%s, %%eax\n", reg_to_str(reg->second));
             }
           }
           fprintf(out_fp, "\tpopl %%ebx\n");
@@ -282,7 +280,8 @@ void generate_code(LLVMModuleRef module) {
 
         case LLVMLoad: {
           auto reg = reg_map.find(instr);
-          if (reg != reg_map.end() && reg->second != nullreg) {
+          assert(reg != reg_map.end());
+          if (reg->second != nullreg) {
             int c = offset_map.at(LLVMGetOperand(instr, 0));
             fprintf(out_fp, "\tmovl %d(%%ebp), %%%s\n", c, reg_to_str(reg->second));
           }
@@ -300,7 +299,8 @@ void generate_code(LLVMModuleRef module) {
             fprintf(out_fp, "\tmovl $%d, %d(%%ebp)\n", valA, c);
           } else {
             auto reg = reg_map.find(operA);
-            if (reg != reg_map.end() && reg->second != nullreg) {
+            assert(reg != reg_map.end());
+            if (reg->second != nullreg) {
               int c = offset_map.at(LLVMGetOperand(instr, 1));
               fprintf(out_fp, "\tmovl %%%s, %d(%%ebp)\n", reg_to_str(reg->second), c);
             } else {
@@ -326,7 +326,8 @@ void generate_code(LLVMModuleRef module) {
               fprintf(out_fp, "\tpushl $%d\n", valP);
             } else {
               auto reg = reg_map.find(p);
-              if (reg != reg_map.end() && reg->second != nullreg)
+              assert(reg != reg_map.end());
+              if (reg->second != nullreg)
                 fprintf(out_fp, "\tpushl %%%s\n", reg_to_str(reg->second));
               else
                 fprintf(out_fp, "\tpushl %d(%%ebp)\n", offset_map.at(p));
@@ -343,7 +344,8 @@ void generate_code(LLVMModuleRef module) {
 
           if (LLVMGetTypeKind(LLVMTypeOf(instr)) != LLVMVoidTypeKind) {
             auto reg = reg_map.find(instr);
-            if (reg != reg_map.end() && reg->second != nullreg)
+            assert(reg != reg_map.end());
+            if (reg->second != nullreg)
               fprintf(out_fp, "\tmovl %%eax, %%%s\n", reg_to_str(reg->second));
             else
               fprintf(out_fp, "\tmovl %%eax, %d(%%ebp)\n", offset_map.at(instr));
@@ -392,7 +394,8 @@ void generate_code(LLVMModuleRef module) {
           Register r = eax;
           int spill_flag = 0;
           auto reg = reg_map.find(instr);
-          if (reg != reg_map.end() && reg->second != nullreg)
+          assert(reg != reg_map.end());
+          if (reg->second != nullreg)
             r = reg->second;
           else
             spill_flag = 1;
@@ -403,7 +406,8 @@ void generate_code(LLVMModuleRef module) {
             fprintf(out_fp, "\tmovl $%d, %%%s\n", valA, reg_to_str(r));
           } else {
             auto regA = reg_map.find(operA);
-            if (regA != reg_map.end() && regA->second != nullreg) {
+            assert(regA != reg_map.end());
+            if (regA->second != nullreg) {
               if (regA->second != r)
                 fprintf(out_fp, "\tmovl %%%s, %%%s\n", reg_to_str(regA->second),
                         reg_to_str(r));
@@ -432,7 +436,8 @@ void generate_code(LLVMModuleRef module) {
             fprintf(out_fp, "\t%s $%d, %%%s\n", opl.c_str(), valB, reg_to_str(r));
           } else {
             auto regB = reg_map.find(operB);
-            if (regB != reg_map.end() && regB->second != nullreg)
+            assert(regB != reg_map.end());
+            if (regB->second != nullreg)
               fprintf(out_fp, "\t%s %%%s, %%%s\n", opl.c_str(),
                       reg_to_str(regB->second), reg_to_str(r));
             else
@@ -449,7 +454,8 @@ void generate_code(LLVMModuleRef module) {
         case LLVMICmp: {
           Register r = eax;
           auto reg = reg_map.find(instr);
-          if (reg != reg_map.end() && reg->second != nullreg)
+          assert(reg != reg_map.end());
+          if (reg->second != nullreg)
             r = reg->second;
 
           LLVMValueRef operA = LLVMGetOperand(instr, 0);
@@ -458,7 +464,8 @@ void generate_code(LLVMModuleRef module) {
             fprintf(out_fp, "\tmovl $%d, %%%s\n", valA, reg_to_str(r));
           } else {
             auto regA = reg_map.find(operA);
-            if (regA != reg_map.end() && regA->second != nullreg) {
+            assert(regA != reg_map.end());
+            if (regA->second != nullreg) {
               if (regA->second != r)
                 fprintf(out_fp, "\tmovl %%%s, %%%s\n", reg_to_str(regA->second),
                         reg_to_str(r));
@@ -474,7 +481,8 @@ void generate_code(LLVMModuleRef module) {
             fprintf(out_fp, "\tcmpl $%d, %%%s\n", valB, reg_to_str(r));
           } else {
             auto regB = reg_map.find(operB);
-            if (regB != reg_map.end() && regB->second != nullreg) {
+            assert(regB != reg_map.end());
+            if (regB->second != nullreg) {
               fprintf(out_fp, "\tcmpl %%%s, %%%s\n",
                       reg_to_str(regB->second), reg_to_str(r));
             } else {
