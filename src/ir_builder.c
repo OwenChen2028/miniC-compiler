@@ -355,7 +355,7 @@ void build_ir(astNode *root) {
   preprocess(root);
 
   module = LLVMModuleCreateWithName("");
-  LLVMSetTarget(module, "x86_64-pc-linux-gnu");
+  LLVMSetTarget(module, "i386-pc-linux-gnu");
 
   LLVMTypeRef print_params[] = {LLVMInt32Type()};
   LLVMTypeRef print_type = LLVMFunctionType(LLVMVoidType(), print_params, 1, 0);

@@ -317,8 +317,8 @@ void generate_code(LLVMModuleRef module) {
 
           LLVMValueRef func = LLVMGetCalledValue(instr);
 
-          if (LLVMGetNumOperands(instr) >= 2) { // called func has param
-            LLVMValueRef p = LLVMGetOperand(instr, 1);
+          if (LLVMGetNumOperands(instr) >= 2) { // func has param
+            LLVMValueRef p = LLVMGetOperand(instr, 0);
             if (LLVMIsAConstantInt(p)) {
               int valP = (int)LLVMConstIntGetSExtValue(p);
               fprintf(out_fp, "\tpushl $%d\n", valP);
@@ -333,7 +333,7 @@ void generate_code(LLVMModuleRef module) {
 
           fprintf(out_fp, "\tcall %s\n", LLVMGetValueName(func));
 
-          if (LLVMGetNumOperands(instr) >= 2) // has param
+          if (LLVMGetNumOperands(instr) >= 2)
             fprintf(out_fp, "\taddl $4, %%esp\n");
 
           fprintf(out_fp, "\tpopl %%edx\n");
