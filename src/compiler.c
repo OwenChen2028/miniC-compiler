@@ -36,13 +36,15 @@ int main(int argc, char *argv[]) {
     out_fp = stdout;
   }
 
-  if (yyparse() == 0) {
+  int result = yyparse();
+  if (result == 0) {
     if (!root) {
       fprintf(stderr, "Error: AST root is NULL.\n");
       return 1;
     }
 
-    switch (semantic_analysis(root)) {
+    result = semantic_analysis(root);
+    switch (result) {
     case 0:
       // printNode(root);
       build_ir(root);
@@ -68,4 +70,6 @@ int main(int argc, char *argv[]) {
     LLVMDisposeModule(module);
     LLVMShutdown();
   }
+
+  return result != 0;
 }

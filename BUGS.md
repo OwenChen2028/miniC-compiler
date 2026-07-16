@@ -28,18 +28,10 @@ successor jump.
 Status: fixed in `src/backend.c` by detecting constant integer branch
 conditions and emitting a direct jump to the selected successor.
 
-## Known / Ignored
-
-### Division is parsed and lowered to IR but not implemented in the backend
-
-The grammar accepts division expressions, and IR generation emits `sdiv`, but
-the backend has no `LLVMSDiv` emission case. This is known incomplete behavior,
-not currently treated as a bug to fix.
-
 ### Invalid input exits with status code 0
 
-Parser and semantic failures print an error message but return process status
-0. They can also leave an empty output file behind.
+Parser and semantic failures previously printed an error message but returned
+process status 0.
 
 Examples:
 
@@ -48,7 +40,17 @@ Examples:
 ./compiler.out tests/frontend/analysis/p1_bad.c out.s
 ```
 
-Status: accepted behavior for now.
+Status: fixed in `src/compiler.c` by propagating parser and semantic analysis
+failures to the process exit status. Invalid input can still leave an empty
+output file behind.
+
+## Known / Ignored
+
+### Division is parsed and lowered to IR but not implemented in the backend
+
+The grammar accepts division expressions, and IR generation emits `sdiv`, but
+the backend has no `LLVMSDiv` emission case. This is known incomplete behavior,
+not currently treated as a bug to fix.
 
 ## Latent Backend Issue
 
