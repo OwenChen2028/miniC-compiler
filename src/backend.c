@@ -369,6 +369,13 @@ void generate_code(LLVMModuleRef module) {
             LLVMBasicBlockRef l2 = LLVMGetSuccessor(instr, 1);
 
             LLVMValueRef oper = LLVMGetOperand(instr, 0);
+            if (LLVMIsAConstantInt(oper)) {
+              int cond = (int)LLVMConstIntGetSExtValue(oper);
+              fprintf(out_fp, "\tjmp %s\n",
+                      label_map.at(cond ? l1 : l2).c_str());
+              break;
+            }
+
             LLVMIntPredicate t = LLVMGetICmpPredicate(oper);
             switch (t) {
             case LLVMIntEQ:
