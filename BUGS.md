@@ -44,14 +44,6 @@ Status: fixed in `src/compiler.c` by propagating parser and semantic analysis
 failures to the process exit status. Invalid input can still leave an empty
 output file behind.
 
-## Known / Ignored
-
-### Division is parsed and lowered to IR but not implemented in the backend
-
-The grammar accepts division expressions, and IR generation emits `sdiv`, but
-the backend has no `LLVMSDiv` emission case. This is known incomplete behavior,
-not currently treated as a bug to fix.
-
 ## Latent Backend Issue
 
 ### Register spills need stack slots for arbitrary SSA temporaries

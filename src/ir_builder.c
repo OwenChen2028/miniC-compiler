@@ -281,8 +281,6 @@ LLVMValueRef genIRExpr(astNode *node) {
       return LLVMBuildSub(builder, lhs, rhs, "");
     case mul:
       return LLVMBuildMul(builder, lhs, rhs, "");
-    case divide:
-      return LLVMBuildSDiv(builder, lhs, rhs, "");
     }
 
     return NULL;

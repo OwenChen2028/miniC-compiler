@@ -46,11 +46,10 @@ typedef enum {
 } rop_type;
 
 typedef enum {
-  add,    // +
-  sub,    // -
-  divide, // /
-  mul,    // *
-  uminus  // -: unary minus
+  add,   // +
+  sub,   // -
+  mul,   // *
+  uminus // -: unary minus
 } op_type;
 
 /* structs for different node types */

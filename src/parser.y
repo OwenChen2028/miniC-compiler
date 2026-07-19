@@ -95,7 +95,6 @@ intExpr : term { $$ = $1; }
         | term '+' term { $$ = createBExpr($1, $3, add); }
         | term '-' term { $$ = createBExpr($1, $3, sub); }
         | term '*' term { $$ = createBExpr($1, $3, mul); }
-        | term '/' term { $$ = createBExpr($1, $3, divide); }
 
 term : posTerm { $$ = $1; }
      | '-' posTerm { $$ = createUExpr((astNode *)$2, uminus); }
