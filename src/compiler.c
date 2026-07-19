@@ -26,16 +26,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (argc >= 3) {
-    out_fp = fopen(argv[2], "w");
-    if (out_fp == NULL) {
-      fprintf(stderr, "Error: failed to open output.\n");
-      return 1;
-    }
-  } else {
-    out_fp = stdout;
-  }
-
   int result = yyparse();
   if (result == 0) {
     if (!root) {
@@ -55,6 +45,16 @@ int main(int argc, char *argv[]) {
       // LLVMDumpModule(module);
       optimize_ir(module);
       // LLVMDumpModule(module);
+      if (argc >= 3) {
+        out_fp = fopen(argv[2], "w");
+        if (out_fp == NULL) {
+          fprintf(stderr, "Error: failed to open output.\n");
+          result = 1;
+          break;
+        }
+      } else {
+        out_fp = stdout;
+      }
       generate_code(module);
       break;
     case 1:
