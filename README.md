@@ -17,12 +17,12 @@ make clean
 
 Run the compiler:
 ```
-./compiler.out input.cpp output.s
+./compiler.out input.c output.s
 ```
 
 Assemble the output:
 ```
-clang++ -m32 output.s main.cpp
+clang -m32 output.s main.c
 ```
 
-`main.cpp` must define `int main()`, `int read()`, and `print(int)`
+`main.c` must define `int main()`, `int read()`, and `print(int)`
