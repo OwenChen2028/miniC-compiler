@@ -1,5 +1,5 @@
-#include "ir_builder.h"
-#include "ast.h"
+#include "ir_builder.hpp"
+#include "ast.hpp"
 #include <cstring>
 #include <llvm-c/Core.h>
 #include <string.h>

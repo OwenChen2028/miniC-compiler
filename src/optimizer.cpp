@@ -1,4 +1,4 @@
-#include "optimizer.h"
+#include "optimizer.hpp"
 #include <llvm-c/Core.h>
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>

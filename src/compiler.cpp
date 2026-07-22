@@ -1,9 +1,9 @@
-#include "analysis.h"
-#include "ast.h"
-#include "backend.h"
-#include "ir_builder.h"
-#include "optimizer.h"
-#include "y.tab.h"
+#include "analysis.hpp"
+#include "ast.hpp"
+#include "backend.hpp"
+#include "ir_builder.hpp"
+#include "optimizer.hpp"
+#include "parser.hpp"
 #include <cstdio>
 #include <llvm-c/Core.h>
 #include <llvm-c/IRReader.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ast.h"
+#include "ast.hpp"
 #include <llvm-c/Core.h>
 
 extern LLVMModuleRef module;

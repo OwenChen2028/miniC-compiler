@@ -1,5 +1,5 @@
-#include "analysis.h"
-#include "ast.h"
+#include "analysis.hpp"
+#include "ast.hpp"
 #include <string>
 #include <unordered_set>
 #include <vector>

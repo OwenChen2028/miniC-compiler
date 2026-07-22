@@ -1,5 +1,5 @@
 %{
-#include "ast.h"
+#include "ast.hpp"
 #include <cstdio>
 #include <vector>
 

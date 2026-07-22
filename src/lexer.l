@@ -1,6 +1,6 @@
 %{
-#include "ast.h"
-#include "y.tab.h"
+#include "ast.hpp"
+#include "parser.hpp"
 #include <vector>
 extern int yyerror(char *);
 %}
