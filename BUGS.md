@@ -1,6 +1,9 @@
 # Bugs
 
-## Spill handling
+There are no known functional correctness bugs for programs accepted by the
+current MiniC frontend.
+
+## Out-of-scope limitation: arbitrary LLVM IR spill handling
 
 This is not a functional correctness issue for the current frontend. Integer
 expressions contain at most one binary operation, and their results are stored
@@ -19,22 +22,3 @@ There is no guarantee that every spilled SSA result gets a slot. If one is used
 before being stored, code generation can crash in `offset_map.at()`.
 
 Test case: `tests/backend/my_tests/large_spill.ll`
-
-## Fixed
-
-### Division
-
-The parser accepted division and the IR builder emitted `sdiv`, but the backend
-did not support it. Division has been removed from the grammar, AST operators,
-and IR builder.
-
-### Constant conditions
-
-LLVM can fold a constant comparison into an `i1`. The backend expected an
-`icmp` instruction and could branch the wrong way. Constant branch operands are
-now handled directly.
-
-### Error status
-
-Parser and analysis errors used to return exit status 0. They now return a
-nonzero status and do not create or truncate the output file.
