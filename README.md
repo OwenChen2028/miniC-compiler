@@ -18,7 +18,7 @@ The backend allocates values to `ebx`, `ecx`, and `edx`. Function results use
 
 ## Language subset
 
-- one integer-returning function with zero or one integer parameter
+- an integer-returning function with an optional integer parameter
 - integer variables, nested scopes, and variable shadowing
 - assignments and integer constants
 - `+`, `-`, `*`, and unary negation
@@ -51,24 +51,26 @@ int func(int n) {
 
 Requirements:
 
-- C++ compiler
-- LLVM 18 development libraries (`llvm-config-18`)
+- C++17 compiler
+- CMake 3.20 or newer
+- LLVM 18 development libraries
 - Flex and Bison (`lex` and `yacc`)
 - Clang and 32-bit development libraries
 
-On Ubuntu, these are provided by `g++`, `llvm-18-dev`, `flex`, `bison`, `clang`,
-and `libc6-dev-i386`.
+On Ubuntu, these are provided by `g++`, `cmake`, `llvm-18-dev`, `flex`, `bison`,
+`clang`, and `libc6-dev-i386`.
 
 Build:
 
 ```sh
-make compiler
+cmake -S . -B build
+cmake --build build
 ```
 
 Compile and run the factorial example:
 
 ```sh
-./compiler.out tests/backend/fact.c factorial.s
+./build/compiler.out tests/backend/fact.c factorial.s
 clang -m32 factorial.s tests/backend/main.c -o factorial
 ./factorial
 ```
@@ -82,7 +84,7 @@ In main printing return value of test: 24
 Usage:
 
 ```text
-./compiler.out <input.c> [output.s]
+./build/compiler.out <input.c> [output.s]
 ```
 
 If `output.s` is omitted, assembly is written to standard output. The linked
@@ -92,7 +94,7 @@ runtime must define `int main()`, `int read()`, and `void print(int)`; see
 Clean:
 
 ```sh
-make clean
+cmake --build build --target clean
 ```
 
 ## Tests
