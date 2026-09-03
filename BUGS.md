@@ -1,9 +1,9 @@
 # Bugs
 
-There are no known functional correctness bugs for programs accepted by the
+There are no known *functional* correctness bugs for programs accepted by the
 current MiniC frontend.
 
-## Out-of-scope limitation: arbitrary LLVM IR spill handling
+## Arbitrary LLVM IR spill handling
 
 This is not a functional correctness issue for the current frontend. Integer
 expressions contain at most one binary operation, and their results are stored
