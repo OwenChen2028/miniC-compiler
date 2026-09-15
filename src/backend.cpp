@@ -112,7 +112,8 @@ void alloc_registers(LLVMValueRef function) {
               if (live_range.count(operB) &&
                   live_range.at(operB).second == inst_index.at(instr)) {
                 auto regB = reg_map.find(operB);
-                if (regB != reg_map.end() && regB->second != nullreg)
+                if (regB != reg_map.end() && regB->second != nullreg &&
+                    regB->second != reg_map.at(instr))
                   available.insert(regB->second);
               } // only if instr has been assigned a register
             }
@@ -143,7 +144,8 @@ void alloc_registers(LLVMValueRef function) {
             if (live_range.count(oper) &&
                 live_range.at(oper).second == inst_index.at(instr)) {
               auto reg = reg_map.find(oper);
-              if (reg != reg_map.end() && reg->second != nullreg)
+              if (reg != reg_map.end() && reg->second != nullreg &&
+                  reg->second != reg_map.at(instr))
                 available.insert(reg->second);
             }
           }
@@ -204,13 +206,14 @@ void getOffsetMap(LLVMValueRef function) {
         if (operA == param) { // only on the param's initial store
           int x = offset_map.at(operA);
           offset_map[LLVMGetOperand(instr, 1)] = x;
-        } else if (!LLVMIsAConstantInt(operA)) {
-          int x = offset_map.at(LLVMGetOperand(instr, 1));
-          offset_map[operA] = x;
         }
-      } else if (LLVMIsALoadInst(instr)) {
-        int x = offset_map.at(LLVMGetOperand(instr, 0));
-        offset_map[instr] = x;
+      } else if (!LLVMIsAICmpInst(instr)) { // comparisons only set flags
+        auto reg = reg_map.find(instr);
+        if (reg != reg_map.end() && reg->second == nullreg) {
+          // spilled values get their own slots
+          localMem += 4;
+          offset_map[instr] = -localMem;
+        }
       }
     }
   }
@@ -285,10 +288,13 @@ void generate_code(LLVMModuleRef module) {
         case LLVMLoad: {
           auto reg = reg_map.find(instr);
           assert(reg != reg_map.end());
+          int c = offset_map.at(LLVMGetOperand(instr, 0));
           if (reg->second != nullreg) {
-            int c = offset_map.at(LLVMGetOperand(instr, 0));
             fprintf(out_fp, "\tmovl %d(%%ebp), %%%s\n", c,
                     reg_to_str(reg->second));
+          } else {
+            fprintf(out_fp, "\tmovl %d(%%ebp), %%eax\n", c);
+            fprintf(out_fp, "\tmovl %%eax, %d(%%ebp)\n", offset_map.at(instr));
           }
           break;
         }

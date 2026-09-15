@@ -1,24 +1,23 @@
 # Bugs
 
-There are no known *functional* correctness bugs for programs accepted by the
-current MiniC frontend.
+## Backend IR limitations
 
-## Arbitrary LLVM IR spill handling
+The backend supports the IR produced by the MiniC frontend, not arbitrary LLVM
+IR. Register allocation is local to each basic block: SSA temporaries cannot
+carry values between blocks, and `phi` instructions are not supported.
+Comparisons set flags for an immediately following conditional branch; they do
+not produce boolean values that can be stored or used in arithmetic.
 
-This is not a functional correctness issue for the current frontend. Integer
-expressions contain at most one binary operation, and their results are stored
-right away, so the generated IR does not create enough live SSA temporaries to
-expose the problem.
+## Fixed: spill storage and register reuse
 
-Spill handling is incomplete for more general LLVM IR. The register allocator
-marks spilled values as `nullreg`, but `getOffsetMap()` only assigns locations
-in a few cases:
+Spilled values now have dedicated stack slots, and spilled loads save their
+value when the load executes. Previously, missing slots could crash code
+generation, and sharing a variable's slot could change an already computed
+value after a store. Common-subexpression elimination could expose these
+problems even with the current frontend's simple expressions.
 
-- allocas get their own stack slots
-- loads reuse the slot they load from
-- stored values reuse the destination slot
+Reusing a dying operand's register also keeps it reserved for the result when
+both operands are the same value, as in `n + n`.
 
-There is no guarantee that every spilled SSA result gets a slot. If one is used
-before being stored, code generation can crash in `offset_map.at()`.
-
-Test case: `tests/backend/my_tests/large_spill.ll`
+Regression tests are in `tests/backend/my_tests`; see `tests/backend/README`
+for commands and expected results.
