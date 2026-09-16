@@ -99,6 +99,12 @@ cmake --build build --target clean
 
 ## Tests
 
+Run the test script from the repository root:
+
+```sh
+./scripts/test.sh
+```
+
 The [`tests`](tests) directory is organized by compiler stage:
 
 - `tests/parser`: parser inputs

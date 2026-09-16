@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(minic_compiler LANGUAGES CXX)
+project(minic_compiler LANGUAGES C CXX)
 
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
