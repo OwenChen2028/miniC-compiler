@@ -16,7 +16,7 @@ int yyerror(const char *);
   int ival;
   char *sval;
   astNode *node;
-  std::vector<astNode *> *nvec; 
+  std::vector<astNode *> *nvec;
 }
 
 %token <ival> NUM
@@ -52,7 +52,11 @@ funcDec : INT NAME '(' ')' block { $$ = createFunc($2, NULL, $5); }
 
 block : '{' blockBody '}' { $$ = createBlock($2); }
 
-blockBody : decls stmts { $$ = $1; $$->insert($$->end(), $2->begin(), $2->end()); delete $2; }
+blockBody : decls stmts {
+  $$ = $1;
+  $$->insert($$->end(), $2->begin(), $2->end());
+  delete $2;
+}
 
 decls : /* empty */ { $$ = new std::vector<astNode *>(); }
       | decls varDec { $$ = $1; $$->push_back($2); }

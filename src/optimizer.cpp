@@ -71,7 +71,7 @@ void doCommonSubexprElim(LLVMBasicBlockRef bb) {
     subexpr curr(op, opers);
     auto prev = visited.find(curr);
 
-    if (prev != visited.end()) { // found curr in visited
+    if (prev != visited.end()) {
       if (!LLVMIsALoadInst(instruction)) {
         LLVMReplaceAllUsesWith(instruction, prev->second);
       } else {
@@ -90,7 +90,7 @@ void doCommonSubexprElim(LLVMBasicBlockRef bb) {
         if (safe) {
           LLVMReplaceAllUsesWith(instruction, prev->second);
         } else
-          prev->second = instruction; // replace old inst, it has a store after
+          prev->second = instruction; // use the load after the store
       }
     } else
       visited.emplace(std::move(curr), instruction);
@@ -176,7 +176,7 @@ int doConstantPropagation(LLVMModuleRef module) {
         for (auto iter = gen[basicBlock].begin();
              iter != gen[basicBlock].end();) {
           if (LLVMGetOperand(*iter, 1) == LLVMGetOperand(instruction, 1))
-            iter = gen[basicBlock].erase(iter); // remove it and get next
+            iter = gen[basicBlock].erase(iter);
           else
             ++iter;
         }

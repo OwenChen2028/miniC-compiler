@@ -19,7 +19,7 @@ FILE *out_fp;
 
 bool compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
   return live_range.at(instrA).second > live_range.at(instrB).second;
-} // decreasing order
+}
 
 void compute_liveness(LLVMBasicBlockRef bb) {
   inst_index.clear();
@@ -115,9 +115,9 @@ void alloc_registers(LLVMValueRef function) {
                 if (regB != reg_map.end() && regB->second != nullreg &&
                     regB->second != reg_map.at(instr))
                   available.insert(regB->second);
-              } // only if instr has been assigned a register
+              }
             }
-          } // if can't reuse 1st oper, fall through to next check
+          }
         }
 
         if (reg_map.find(instr) == reg_map.end()) {
@@ -128,7 +128,7 @@ void alloc_registers(LLVMValueRef function) {
           } else {
             LLVMValueRef v = find_spill(instr);
             if (v != NULL) {
-              if (compare_instr(instr, v)) { // reversed bc dec order
+              if (compare_instr(instr, v)) { // spill the later last use
                 reg_map[instr] = nullreg;
               } else {
                 reg_map[instr] = reg_map.at(v);
@@ -326,12 +326,18 @@ void generate_code(LLVMModuleRef module) {
         }
 
         case LLVMCall: {
+          int argMem = LLVMGetNumOperands(instr) >= 2 ? 4 : 0;
+          int savedMem = 20; // return address and saved ebp, ebx, ecx, edx
+          int padding = (16 - (localMem + savedMem + argMem) % 16) % 16;
+
           fprintf(out_fp, "\tpushl %%ecx\n");
           fprintf(out_fp, "\tpushl %%edx\n");
+          if (padding)
+            fprintf(out_fp, "\tsubl $%d, %%esp\n", padding);
 
           LLVMValueRef func = LLVMGetCalledValue(instr);
 
-          if (LLVMGetNumOperands(instr) >= 2) { // func has param
+          if (argMem) { // func has param
             LLVMValueRef p = LLVMGetOperand(instr, 0);
             if (LLVMIsAConstantInt(p)) {
               int valP = (int)LLVMConstIntGetSExtValue(p);
@@ -348,8 +354,8 @@ void generate_code(LLVMModuleRef module) {
 
           fprintf(out_fp, "\tcall %s\n", LLVMGetValueName(func));
 
-          if (LLVMGetNumOperands(instr) >= 2)
-            fprintf(out_fp, "\taddl $4, %%esp\n");
+          if (argMem + padding)
+            fprintf(out_fp, "\taddl $%d, %%esp\n", argMem + padding);
 
           fprintf(out_fp, "\tpopl %%edx\n");
           fprintf(out_fp, "\tpopl %%ecx\n");
@@ -518,4 +524,5 @@ void generate_code(LLVMModuleRef module) {
       }
     }
   }
+  fprintf(out_fp, ".section .note.GNU-stack,\"\",@progbits\n");
 }

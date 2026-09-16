@@ -12,7 +12,7 @@ char *get_indent_str(int n) {
   return ret;
 }
 
-/* create and free functions for ast_prog type astNode */
+/* create and free functions for ast_prog */
 astNode *createProg(astNode *ext1, astNode *ext2, astNode *func) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -36,7 +36,7 @@ void freeProg(astNode *node) {
   return;
 }
 
-/*create and free functions for ast_func type astNode */
+/* create and free functions for ast_func */
 astNode *createFunc(const char *name, astNode *param, astNode *body) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -65,7 +65,7 @@ void freeFunc(astNode *node) {
   return;
 }
 
-/*create and free functionns for ast_extern*/
+/* create and free functions for ast_extern */
 
 astNode *createExtern(const char *name) {
   astNode *node;
@@ -87,7 +87,7 @@ void freeExtern(astNode *node) {
   return;
 }
 
-/*create and free functions for ast_var*/
+/* create and free functions for ast_var */
 
 astNode *createVar(const char *name) {
   astNode *node;
@@ -109,7 +109,7 @@ void freeVar(astNode *node) {
   return;
 }
 
-/*create and free functions for ast_cnst type of node*/
+/* create and free functions for ast_cnst */
 astNode *createCnst(int value) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -126,7 +126,7 @@ void freeCnst(astNode *node) {
   return;
 }
 
-/*create and free functions for ast_rexpr type of node*/
+/* create and free functions for ast_rexpr */
 astNode *createRExpr(astNode *lhs, astNode *rhs, rop_type op) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -142,7 +142,7 @@ astNode *createRExpr(astNode *lhs, astNode *rhs, rop_type op) {
 void freeRExpr(astNode *node) {
   assert(node != NULL && node->type == ast_rexpr);
 
-  // We call freeNode as we don't know the type of nodes for lhs and rhs
+  // lhs and rhs can have different node types
   freeNode(node->rexpr.lhs);
   freeNode(node->rexpr.rhs);
   free(node);
@@ -150,7 +150,7 @@ void freeRExpr(astNode *node) {
   return;
 }
 
-/*create and free functions for ast_bexpr type of node*/
+/* create and free functions for ast_bexpr */
 astNode *createBExpr(astNode *lhs, astNode *rhs, op_type op) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -166,7 +166,7 @@ astNode *createBExpr(astNode *lhs, astNode *rhs, op_type op) {
 void freeBExpr(astNode *node) {
   assert(node != NULL && node->type == ast_bexpr);
 
-  // We call freeNode as we don't know the type of nodes for rhs and lhs
+  // lhs and rhs can have different node types
   freeNode(node->bexpr.lhs);
   freeNode(node->bexpr.rhs);
 
@@ -175,7 +175,7 @@ void freeBExpr(astNode *node) {
   return;
 }
 
-/* create and free functions for ast_uexpr type of node */
+/* create and free functions for ast_uexpr */
 astNode *createUExpr(astNode *expr, op_type op) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -196,7 +196,7 @@ void freeUExpr(astNode *node) {
   return;
 }
 
-/* create and free functions for a statement of type ast_call */
+/* create and free functions for ast_call */
 astNode *createCall(const char *name, astNode *param) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -223,7 +223,7 @@ void freeCall(astNode *node) {
   return;
 }
 
-/*create and free functions for a stmt of type ast_ret*/
+/* create and free functions for ast_ret */
 astNode *createRet(astNode *expr) {
   astNode *node;
   node = (astNode *)calloc(1, sizeof(astNode));
@@ -243,7 +243,7 @@ void freeRet(astNode *node) {
   return;
 }
 
-/*create and free functions for a stmt of type ast_block*/
+/* create and free functions for ast_block */
 astNode *createBlock(vector<astNode *> *stmt_list) {
   vector<astNode *> slist;
   astNode *node = (astNode *)calloc(1, sizeof(astNode));
@@ -272,7 +272,7 @@ void freeBlock(astNode *node) {
   return;
 }
 
-/* create and free functions for stmt of type while*/
+/* create and free functions for ast_while */
 astNode *createWhile(astNode *cond, astNode *body) {
   astNode *node = (astNode *)calloc(1, sizeof(astNode));
   node->type = ast_stmt;
@@ -295,7 +295,7 @@ void freeWhile(astNode *node) {
   return;
 }
 
-/*create and free functions for stmt of type if*/
+/* create and free functions for ast_if */
 astNode *createIf(astNode *cond, astNode *ifbody, astNode *elsebody) {
   astNode *node = (astNode *)calloc(1, sizeof(astNode));
   node->type = ast_stmt;
@@ -322,7 +322,7 @@ void freeIf(astNode *node) {
   return;
 }
 
-/* create and free functions of stmt type ast_decl */
+/* create and free functions for ast_decl */
 astNode *createDecl(const char *name) {
   astNode *node = (astNode *)calloc(1, sizeof(astNode));
   node->type = ast_stmt;
@@ -342,7 +342,7 @@ void freeDecl(astNode *node) {
   free(node);
 }
 
-/* create and free functions of stmt type ast_assign */
+/* create and free functions for ast_asgn */
 astNode *createAsgn(astNode *lhs, astNode *rhs) {
   astNode *node = (astNode *)calloc(1, sizeof(astNode));
   node->type = ast_stmt;
@@ -365,9 +365,7 @@ void freeAsgn(astNode *node) {
   return;
 }
 
-/* free function for releasing all the memory assigned to a node based
-on the type. This function is called by other free* functions when
-the type of a child node is not obvious from the context */
+/* dispatch by node type when the child's type is not known */
 
 void freeNode(astNode *node) {
   assert(node != NULL);
@@ -416,8 +414,7 @@ void freeNode(astNode *node) {
   }
 }
 
-/* free function to stmt. To be called when stmt type is not obvious
-from the context */
+/* dispatch by statement type */
 void freeStmt(astNode *node) {
   assert(node != NULL && node->type == ast_stmt);
 
