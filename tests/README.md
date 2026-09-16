@@ -4,7 +4,7 @@
 
 - `parser`: accepted and rejected syntax
 - `analysis`: accepted programs and one semantic error per rejected program
-- `ir`: control-flow and expression lowering
+- `ir_builder`: control-flow and expression lowering
 - `optimizer`: source examples and standalone LLVM IR pass test files
 - `backend`: complete programs compiled to x86
 

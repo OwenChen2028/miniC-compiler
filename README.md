@@ -101,7 +101,8 @@ cmake --build build --target clean
 
 The [`tests`](tests) directory is organized by compiler stage:
 
-- `tests/frontend`: parser and semantic-analysis inputs
+- `tests/parser`: parser inputs
+- `tests/analysis`: semantic-analysis inputs
 - `tests/ir_builder`: expression and control-flow inputs
 - `tests/optimizer`: optimizer-pass IR test files and source examples
 - `tests/backend`: programs for checking generated assembly
