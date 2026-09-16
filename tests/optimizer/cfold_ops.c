@@ -4,11 +4,11 @@ extern int read();
 int func(int p){
 	int a;
 	int b;
-	int c1;
-	int c2;
 	a = 10;
 	b = 20;
-  c2 = a < b;
+	if (a < b)
+		return 1;
+	else
+		return 0;
 	
-	return c2;
 }
