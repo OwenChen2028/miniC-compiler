@@ -1,5 +1,6 @@
 %{
 #include "ast.hpp"
+#include <cstdlib>
 #include <cstdio>
 #include <vector>
 
@@ -40,6 +41,19 @@ int yyerror(const char *);
 %type <node> relExpr intExpr term posTerm
 %type <nvec> blockBody decls stmts
 
+%destructor { free($$); } <sval>
+%destructor {
+  if ($$ && $$ != root)
+    freeNode($$);
+} <node>
+%destructor {
+  if ($$) {
+    for (astNode *node : *$$)
+      freeNode(node);
+    delete $$;
+  }
+} <nvec>
+
 %%
 program : printDec readDec funcDec { root = createProg($1, $2, $3); }
 
@@ -47,8 +61,15 @@ printDec : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
 
 readDec : EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
 
-funcDec : INT NAME '(' ')' block { $$ = createFunc($2, NULL, $5); }
-        | INT NAME '(' INT NAME ')' block { $$ = createFunc($2, createVar($5), $7); }
+funcDec : INT NAME '(' ')' block {
+  $$ = createFunc($2, NULL, $5);
+  free($2);
+}
+        | INT NAME '(' INT NAME ')' block {
+  $$ = createFunc($2, createVar($5), $7);
+  free($2);
+  free($5);
+}
 
 block : '{' blockBody '}' { $$ = createBlock($2); }
 
@@ -61,7 +82,7 @@ blockBody : decls stmts {
 decls : /* empty */ { $$ = new std::vector<astNode *>(); }
       | decls varDec { $$ = $1; $$->push_back($2); }
 
-varDec : INT NAME ';' { $$ = createDecl($2); }
+varDec : INT NAME ';' { $$ = createDecl($2); free($2); }
 
 stmts : /* empty */ { $$ = new std::vector<astNode *>(); }
       | stmts stmt { $$ = $1; $$->push_back($2); }
@@ -73,8 +94,14 @@ stmt : varAssign { $$ = $1; }
      | retStmt { $$ = $1; }
      | block { $$ = $1; }
 
-varAssign : NAME '=' intExpr ';' { $$ = createAsgn(createVar($1), $3); }
-          | NAME '=' readCall ';' { $$ = createAsgn(createVar($1), $3); }
+varAssign : NAME '=' intExpr ';' {
+  $$ = createAsgn(createVar($1), $3);
+  free($1);
+}
+          | NAME '=' readCall ';' {
+  $$ = createAsgn(createVar($1), $3);
+  free($1);
+}
 
 readCall : READ '(' ')' { $$ = createCall("read"); }
 
@@ -104,7 +131,7 @@ term : posTerm { $$ = $1; }
      | '-' posTerm { $$ = createUExpr((astNode *)$2, uminus); }
 
 posTerm : NUM { $$ = createCnst($1); }
-        | NAME { $$ = createVar($1); }
+        | NAME { $$ = createVar($1); free($1); }
 %%
 
 int yyerror(const char *s) {

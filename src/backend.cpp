@@ -201,12 +201,6 @@ void getOffsetMap(LLVMValueRef function) {
       if (LLVMIsAAllocaInst(instr)) {
         localMem += 4;
         offset_map[instr] = -localMem;
-      } else if (LLVMIsAStoreInst(instr)) {
-        LLVMValueRef operA = LLVMGetOperand(instr, 0);
-        if (operA == param) { // only on the param's initial store
-          int x = offset_map.at(operA);
-          offset_map[LLVMGetOperand(instr, 1)] = x;
-        }
       } else if (!LLVMIsAICmpInst(instr)) { // comparisons only set flags
         auto reg = reg_map.find(instr);
         if (reg != reg_map.end() && reg->second == nullreg) {
@@ -302,8 +296,13 @@ void generate_code(LLVMModuleRef module) {
         case LLVMStore: {
           LLVMValueRef operA = LLVMGetOperand(instr, 0);
           if (LLVMCountParams(function) > 0 &&
-              operA == LLVMGetParam(function, 0))
+              operA == LLVMGetParam(function, 0)) {
+            int c1 = offset_map.at(operA);
+            int c2 = offset_map.at(LLVMGetOperand(instr, 1));
+            fprintf(out_fp, "\tmovl %d(%%ebp), %%eax\n", c1);
+            fprintf(out_fp, "\tmovl %%eax, %d(%%ebp)\n", c2);
             break;
+          }
           if (LLVMIsAConstantInt(operA)) {
             int c = offset_map.at(LLVMGetOperand(instr, 1));
             int valA = (int)LLVMConstIntGetSExtValue(operA);

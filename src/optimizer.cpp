@@ -1,34 +1,11 @@
 #include "optimizer.hpp"
 #include <llvm-c/Core.h>
-#include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-LLVMModuleRef createLLVMModule(char *filename) {
-  char *err = 0;
-
-  LLVMMemoryBufferRef ll_f = 0;
-  LLVMModuleRef m = 0;
-
-  LLVMCreateMemoryBufferWithContentsOfFile(filename, &ll_f, &err);
-
-  if (err != NULL) {
-    fprintf(stderr, "%s\n", err);
-    return NULL;
-  }
-
-  LLVMParseIRInContext(LLVMGetGlobalContext(), ll_f, &m, &err);
-
-  if (err != NULL) {
-    fprintf(stderr, "%s\n", err);
-  }
-
-  return m;
-}
 
 struct subexpr {
   LLVMOpcode opcode;

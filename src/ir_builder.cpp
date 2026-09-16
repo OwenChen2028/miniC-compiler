@@ -1,5 +1,6 @@
 #include "ir_builder.hpp"
 #include "ast.hpp"
+#include <cstdlib>
 #include <cstring>
 #include <llvm-c/Core.h>
 #include <string.h>
@@ -44,6 +45,7 @@ void preprocess_walk_nodes(astNode *node) {
     renamings.emplace_back(std::unordered_map<std::string, std::string>());
     if (node->func.param) {
       std::string orig_name = node->func.param->var.name;
+      free(node->func.param->var.name);
       node->func.param->var.name = strdup(
           (orig_name + "." + std::to_string(var_counter[orig_name])).c_str());
       renamings.back()[orig_name] = node->func.param->var.name;
@@ -65,6 +67,7 @@ void preprocess_walk_nodes(astNode *node) {
     for (int i = (int)renamings.size() - 1; i >= 0; i--) {
       auto iter = renamings[i].find(node->var.name);
       if (iter != renamings[i].end()) {
+        free(node->var.name);
         node->var.name = strdup(iter->second.c_str());
         break;
       }
@@ -136,6 +139,7 @@ void preprocess_walk_stmt(astStmt *stmt) {
 
   case ast_decl: {
     std::string orig_name = stmt->decl.name;
+    free(stmt->decl.name);
     stmt->decl.name = strdup(
         (orig_name + "." + std::to_string(var_counter[orig_name])).c_str());
     renamings.back()[orig_name] = stmt->decl.name;
