@@ -1,16 +1,20 @@
 # Tests
 
-Tests are grouped by compiler stage:
+## Organization
 
 - `parser`: accepted and rejected syntax
 - `analysis`: accepted programs and one semantic error per rejected program
 - `ir`: control-flow and expression lowering
-- `optimizer`: source and LLVM IR fixtures; `.expected.ll` is expected output
+- `optimizer`: source examples and standalone LLVM IR pass test files
 - `backend`: complete programs compiled to x86
 
-`runtime.c` files provide `main`, `read`, and `print` where execution is useful.
-The backend runtime also checks stack alignment. Its optional argument is passed
-to `func` and defaults to 4.
+## Backend test runtime
+
+`tests/backend/runtime.c` provides `main`, `read`, and `print`. It also checks
+stack alignment. Its optional command-line argument is passed to `func` and
+defaults to 4.
+
+## Example
 
 ```sh
 ./build/compiler.out tests/backend/fact.c fact.s

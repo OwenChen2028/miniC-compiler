@@ -103,7 +103,7 @@ The [`tests`](tests) directory is organized by compiler stage:
 
 - `tests/frontend`: parser and semantic-analysis inputs
 - `tests/ir_builder`: expression and control-flow inputs
-- `tests/optimizer`: source, unoptimized IR, and expected optimized IR
+- `tests/optimizer`: optimizer-pass IR test files and source examples
 - `tests/backend`: programs for checking generated assembly
 
 The backend tests include factorial, Fibonacci, summation, remainder, and
