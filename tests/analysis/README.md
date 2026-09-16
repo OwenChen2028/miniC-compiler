@@ -12,6 +12,13 @@ suffix `bad` should be rejected for these conditions:
 | `p3_bad.c` | Variable `c` is used outside the declaration's scope in the return statement. |
 | `p4_bad.c` | Variable `a` is used before its declaration in a nested scope. |
 
+The other source files cover the same scope and declaration rules:
+
+- `control_flow.c`, `nested_shadowing.c`, and `shadowing.c` contain accepted
+  scope cases.
+- `duplicate_parameter.c`, `out_of_scope.c`, `undeclared_variable.c`, and
+  `use_before_declaration.c` contain rejected cases.
+
 `main.c` is a C test runtime and is not compiler input.
 
 ## Run

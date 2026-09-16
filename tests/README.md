@@ -2,17 +2,19 @@
 
 ## Organization
 
-- `parser`: accepted and rejected syntax
-- `analysis`: accepted programs and one semantic error per rejected program
-- `ir_builder`: control-flow and expression lowering
-- `optimizer`: source examples and standalone LLVM IR pass test files
-- `backend`: complete programs compiled to x86
+- `parser`: syntax accepted or rejected by the parser
+- `analysis`: programs accepted or rejected by semantic analysis
+- `ir_builder`: source programs used to inspect generated LLVM IR
+- `optimizer`: optimizer source cases, IR inputs, and expected IR outputs
+- `backend`: complete programs compiled to x86 assembly
 
-## Backend test runtime
+Each directory contains a README with the files and commands specific to that
+test group.
 
-`tests/backend/runtime.c` provides `main`, `read`, and `print`. It also checks
-stack alignment. Its optional command-line argument is passed to `func` and
-defaults to 4.
+## Backend runtime
+
+`tests/backend/runtime.c` provides `main`, `read`, and `print`. Its optional
+command-line argument is passed to `func` and defaults to 4.
 
 ## Example
 
