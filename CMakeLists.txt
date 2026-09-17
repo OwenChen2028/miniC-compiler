@@ -38,6 +38,7 @@ add_executable(
 )
 
 target_compile_features(compiler PRIVATE cxx_std_17)
+target_compile_options(compiler PRIVATE -Wall -Wextra -Wpedantic)
 
 target_include_directories(
   compiler
@@ -47,7 +48,23 @@ target_include_directories(
     ${LLVM_INCLUDE_DIRS}
 )
 
-llvm_map_components_to_libnames(LLVM_LIBRARIES core irreader support)
+llvm_map_components_to_libnames(LLVM_LIBRARIES analysis core irreader support)
 target_link_libraries(compiler PRIVATE ${LLVM_LIBRARIES})
 
 set_target_properties(compiler PROPERTIES OUTPUT_NAME compiler.out)
+
+set_source_files_properties(
+  ${FLEX_MiniCLexer_OUTPUTS}
+  PROPERTIES COMPILE_OPTIONS -Wno-unused-function
+)
+
+add_executable(
+  optimizer_runner
+  tests/optimizer/runner.cpp
+  src/optimizer.cpp
+)
+
+target_compile_features(optimizer_runner PRIVATE cxx_std_17)
+target_compile_options(optimizer_runner PRIVATE -Wall -Wextra -Wpedantic)
+target_include_directories(optimizer_runner PRIVATE include ${LLVM_INCLUDE_DIRS})
+target_link_libraries(optimizer_runner PRIVATE ${LLVM_LIBRARIES})

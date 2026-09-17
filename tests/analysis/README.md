@@ -2,28 +2,26 @@
 
 ## Files
 
-Files with the suffix `good` should pass semantic analysis. Files with the
-suffix `bad` should be rejected for these conditions:
+The accepted inputs cover valid scopes and variable shadowing:
+
+- `control_flow.c`
+- `nested_shadowing.c`
+- `shadowing.c`
+
+The rejected inputs each cover one semantic error:
 
 | File | Error condition |
 | --- | --- |
-| `p1_bad.c` | Parameter `i` is also declared as a variable. |
-| `p2_bad.c` | Variable `b` is used without declaration. |
-| `p3_bad.c` | Variable `c` is used outside the declaration's scope in the return statement. |
-| `p4_bad.c` | Variable `a` is used before its declaration in a nested scope. |
-
-The other source files cover the same scope and declaration rules:
-
-- `control_flow.c`, `nested_shadowing.c`, and `shadowing.c` contain accepted
-  scope cases.
-- `duplicate_parameter.c`, `out_of_scope.c`, `undeclared_variable.c`, and
-  `use_before_declaration.c` contain rejected cases.
+| `duplicate_parameter.c` | Parameter `i` is also declared as a variable. |
+| `out_of_scope.c` | Variable `c` is used outside its declaration's scope. |
+| `undeclared_variable.c` | Variable `b` is used without declaration. |
+| `use_before_declaration.c` | Variable `a` is used before its nested declaration. |
 
 `main.c` is a C test runtime and is not compiler input.
 
 ## Run
 
 ```sh
-./build/compiler.out tests/analysis/p1_good.c /tmp/p1_good.s
-./build/compiler.out tests/analysis/p1_bad.c /tmp/p1_bad.s
+./build/compiler.out tests/analysis/control_flow.c /tmp/control_flow.s
+./build/compiler.out tests/analysis/undeclared_variable.c /tmp/undeclared.s
 ```

@@ -244,8 +244,7 @@ void freeRet(astNode *node) {
 }
 
 /* create and free functions for ast_block */
-astNode *createBlock(vector<astNode *> *stmt_list) {
-  vector<astNode *> slist;
+astNode *createBlock(std::vector<astNode *> *stmt_list) {
   astNode *node = (astNode *)calloc(1, sizeof(astNode));
   node->type = ast_stmt;
   node->stmt.type = ast_block;
@@ -259,8 +258,8 @@ void freeBlock(astNode *node) {
   assert(node != NULL && node->type == ast_stmt);
   assert(node->stmt.type == ast_block);
 
-  vector<astNode *> slist = *(node->stmt.block.stmt_list);
-  vector<astNode *>::iterator it = slist.begin();
+  std::vector<astNode *> slist = *(node->stmt.block.stmt_list);
+  std::vector<astNode *>::iterator it = slist.begin();
 
   while (it != slist.end()) {
     freeNode(*it);
@@ -528,8 +527,8 @@ void printStmt(astStmt *stmt, int n) {
   }
   case ast_block: {
     printf("%sBlock:\n", indent);
-    vector<astNode *> slist = *(stmt->block.stmt_list);
-    vector<astNode *>::iterator it = slist.begin();
+    std::vector<astNode *> slist = *(stmt->block.stmt_list);
+    std::vector<astNode *>::iterator it = slist.begin();
     while (it != slist.end()) {
       printNode(*it, n + 1);
       it++;

@@ -2,26 +2,30 @@
 
 ## Files
 
-The `.c` files are MiniC source inputs. The `.ll` files are LLVM IR inputs and
-expected outputs for the optimizer tests. The `cfold_*` and `fold_*` files
-cover arithmetic and comparison folding. The `common_subexpression*` files
-cover common-subexpression elimination. The `constant_*`, `global*`,
-`local*`, `p2_common_subexpr*`, and `p3_const_prop*` through
-`p5_const_prop*` files cover propagation and unchanged cases.
+The `.c` files are MiniC source inputs. Each `<name>.ll` file is optimizer
+input, and its `<name>.expected.ll` file is the expected output.
 
-`global_opt*`, `local_opt*`, and `no_opt*` are additional source/IR cases.
-`main.c` is a C test runtime and is not compiler input.
+- `fold_add`, `fold_sub`, and `fold_mul` cover arithmetic folding.
+- `fold_cmp` covers constant propagation into a comparison.
+- `common_subexpression` covers common-subexpression elimination.
+- `constant_branch`, `constant_loop`, `constant_loop_variant`, `global`, and
+  `local` cover constant propagation.
+- `unchanged` covers input that should not change.
 
-Files ending in `.ll` without `_opt` or `.expected.ll` are unoptimized inputs.
-Files ending in `_opt.ll` or `.expected.ll` are expected optimized outputs.
+`runner.cpp` loads an input module, runs the project optimizer, verifies the
+result, and writes the optimized module. `main.c` is a C test runtime. Neither
+file is MiniC compiler input.
 
 ## Coverage
 
 The test files exercise local constant folding, common-subexpression
 elimination, and global constant propagation.
 
-## Validate IR
+## Run
 
 ```sh
-llvm-as tests/optimizer/local.ll -o /tmp/local.bc
+./scripts/test.sh
 ```
+
+The script compares every optimized module with its expected result using
+`llvm-diff`.

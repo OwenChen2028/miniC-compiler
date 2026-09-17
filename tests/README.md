@@ -5,8 +5,8 @@
 - `parser`: syntax accepted or rejected by the parser
 - `analysis`: programs accepted or rejected by semantic analysis
 - `ir_builder`: source programs used to inspect generated LLVM IR
-- `optimizer`: optimizer source cases, IR inputs, and expected IR outputs
-- `backend`: complete programs compiled to x86 assembly
+- `optimizer`: optimizer inputs compared with expected IR outputs
+- `backend`: complete programs compiled, executed, and checked for expected output
 
 Each directory contains a README with the files and commands specific to that
 test group.

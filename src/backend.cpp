@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <llvm-c/Core.h>
 #include <string>
 #include <unordered_map>
@@ -16,6 +17,16 @@ std::unordered_map<LLVMValueRef, std::pair<int, int>> live_range;
 std::vector<LLVMValueRef> sorted_list;
 
 FILE *out_fp;
+
+[[noreturn]] void unsupported_opcode(LLVMOpcode opcode) {
+  fprintf(stderr, "Error: unsupported LLVM opcode %d.\n", (int)opcode);
+  exit(EXIT_FAILURE);
+}
+
+[[noreturn]] void unsupported_predicate(LLVMIntPredicate predicate) {
+  fprintf(stderr, "Error: unsupported LLVM predicate %d.\n", (int)predicate);
+  exit(EXIT_FAILURE);
+}
 
 bool compare_instr(LLVMValueRef instrA, LLVMValueRef instrB) {
   return live_range.at(instrA).second > live_range.at(instrB).second;
@@ -257,6 +268,9 @@ void generate_code(LLVMModuleRef module) {
 
         LLVMOpcode opcode = LLVMGetInstructionOpcode(instr);
         switch (opcode) {
+        case LLVMAlloca:
+          break;
+
         case LLVMRet: {
           if (LLVMGetNumOperands(instr) > 0) {
             LLVMValueRef operA = LLVMGetOperand(instr, 0);
@@ -407,6 +421,8 @@ void generate_code(LLVMModuleRef module) {
             case LLVMIntSGE:
               fprintf(out_fp, "\tjge %s\n", label_map.at(l1).c_str());
               break;
+            default:
+              unsupported_predicate(t);
             }
 
             fprintf(out_fp, "\tjmp %s\n", label_map.at(l2).c_str());
@@ -453,6 +469,8 @@ void generate_code(LLVMModuleRef module) {
           case LLVMMul:
             opl = "imull";
             break;
+          default:
+            unsupported_opcode(opcode);
           }
 
           LLVMValueRef operB = LLVMGetOperand(instr, 1);
@@ -519,6 +537,8 @@ void generate_code(LLVMModuleRef module) {
 
           break;
         }
+        default:
+          unsupported_opcode(opcode);
         }
       }
     }

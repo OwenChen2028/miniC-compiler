@@ -8,6 +8,9 @@ The `.c` files are complete MiniC programs compiled to x86 assembly. `fact.c`,
 `cse_pressure.c`, `repeated_operand.c`, `spill_stores.c`, and `stress.c` cover
 register-allocation cases.
 
+Each source has an `.expected` file containing its expected output. Programs
+that call `read()` also have an `.input` file containing their standard input.
+
 `main.c` and `runtime.c` are C test runtimes and are not compiler input.
 
 ## Run
@@ -23,3 +26,6 @@ clang -m32 fact.s tests/backend/runtime.c -o fact
 
 Run the same commands for the other source files in `tests/backend`, excluding
 `main.c` and `runtime.c`.
+
+Run `./scripts/test.sh` to compile every backend source, execute it, and compare
+its output with the corresponding `.expected` file.

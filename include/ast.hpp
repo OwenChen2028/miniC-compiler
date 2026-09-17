@@ -3,7 +3,6 @@
 
 #include <cstddef>
 #include <vector>
-using namespace std;
 
 struct ast_Node;
 typedef struct ast_Node astNode;
@@ -107,7 +106,7 @@ typedef struct {
 } astRet;
 
 typedef struct {
-  vector<astNode *> *stmt_list;
+  std::vector<astNode *> *stmt_list;
 } astBlock;
 
 typedef struct {
@@ -181,7 +180,7 @@ a astNode*.
 
 astNode *createCall(const char *name, astNode *param = NULL);
 astNode *createRet(astNode *expr);
-astNode *createBlock(vector<astNode *> *stmt_list);
+astNode *createBlock(std::vector<astNode *> *stmt_list);
 astNode *createWhile(astNode *cond, astNode *body);
 astNode *createIf(astNode *cond, astNode *if_body, astNode *else_body = NULL);
 astNode *createDecl(const char *decl);

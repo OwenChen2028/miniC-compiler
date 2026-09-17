@@ -58,7 +58,7 @@ Requirements:
 - Clang and 32-bit development libraries
 
 On Ubuntu, these are provided by `g++`, `cmake`, `llvm-18-dev`, `flex`, `bison`,
-`clang`, and `libc6-dev-i386`.
+`clang`, `libc6-dev-i386`, `libedit-dev`, and `libcurl4-openssl-dev`.
 
 Build:
 
@@ -114,5 +114,5 @@ The [`tests`](tests) directory is organized by compiler stage:
 - `tests/backend`: programs for checking generated assembly
 
 The backend tests include factorial, Fibonacci, summation, remainder, and
-input-driven loops. Use the compile, link, and run commands above with any of
-the source files in `tests/backend`.
+input-driven loops. The script also compares optimizer output with expected IR
+and checks the output of every compiled backend program.

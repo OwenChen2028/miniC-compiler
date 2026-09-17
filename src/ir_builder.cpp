@@ -285,6 +285,8 @@ LLVMValueRef genIRExpr(astNode *node) {
       return LLVMBuildSub(builder, lhs, rhs, "");
     case mul:
       return LLVMBuildMul(builder, lhs, rhs, "");
+    case uminus:
+      return NULL;
     }
 
     return NULL;
@@ -316,6 +318,8 @@ LLVMValueRef genIRExpr(astNode *node) {
     LLVMTypeRef type = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
     return LLVMBuildCall2(builder, type, read_func, NULL, 0, "");
   }
+  default:
+    return NULL;
   }
 
   return NULL;

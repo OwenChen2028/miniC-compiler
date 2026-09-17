@@ -126,6 +126,8 @@ int doConstantFolding(LLVMBasicBlockRef bb) {
         case LLVMMul:
           constInstr = LLVMConstMul(operA, operB);
           break;
+        default:
+          continue;
         }
 
         ++changes;
